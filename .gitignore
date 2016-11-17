@@ -1,0 +1,18 @@
+target
+
+#OS X files
+.DS_Store
+.java-version
+
+# Eclipse files
+eclipse-classes
+.classpath
+.settings
+.project
+.xml
+.bpmn
+
+# emacs backup files
+*~
+
+
