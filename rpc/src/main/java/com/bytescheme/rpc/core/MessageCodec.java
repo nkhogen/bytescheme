@@ -37,7 +37,7 @@ public class MessageCodec implements JsonSerializer<RemoteObject>, JsonDeseriali
     JsonObject object = (JsonObject) json;
     UUID objectId = context.deserialize(object.get(OBJECT_ID_TAG), UUID.class);
     try {
-      RemoteObject remoteObject = remoteObjectFactory
+			RemoteObject remoteObject = remoteObjectFactory
           .createRemoteObject((Class<RemoteObject>) Class.forName(typeOfT.getTypeName()), objectId);
       if (remoteObjectListener != null) {
         remoteObjectListener.onRemoteObjectFound(remoteObject);

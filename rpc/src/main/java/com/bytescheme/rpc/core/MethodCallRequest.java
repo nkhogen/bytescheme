@@ -7,6 +7,7 @@ public class MethodCallRequest {
   private String name;
   private Object[] parameters;
   private UUID requestId;
+  private String sessionId;
 
   public UUID getObjectId() {
     return objectId;
@@ -38,5 +39,13 @@ public class MethodCallRequest {
 
   public void setRequestId(UUID requestId) {
     this.requestId = requestId;
+  }
+
+  public String getSessionId() {
+    return sessionId;
+  }
+
+  public void setSessionId(String sessionId) {
+    this.sessionId = sessionId;
   }
 }

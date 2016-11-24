@@ -1,0 +1,13 @@
+{
+	"00000000-0000-0000-0000-000000000001": {
+		"hello:0":"role1, role2",
+		"hello:1":"role1, role2",
+		"toString.*":"role1, role2"
+	},
+	
+	"00000000-0000-0000-0000-000000000002": {
+		"hello:0":"role1, role2",
+		"hello:1":"role1, role2",
+		"toString.*":"role1, role2"
+	}
+}
