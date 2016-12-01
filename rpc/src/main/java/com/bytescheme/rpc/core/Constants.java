@@ -1,5 +1,10 @@
 package com.bytescheme.rpc.core;
 
+/**
+ * 
+ * @author Naorem Khogendro Singh
+ *
+ */
 public final class Constants {
   private Constants() {
   }

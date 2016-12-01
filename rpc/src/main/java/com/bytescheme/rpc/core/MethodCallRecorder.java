@@ -5,6 +5,11 @@ import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * A simple call stack tracker.
+ * @author Naorem Khogendro Singh
+ *
+ */
 public final class MethodCallRecorder {
   public interface LogMessageHandler {
     void process(UUID requestId, long elapsedTime, long methodTime);

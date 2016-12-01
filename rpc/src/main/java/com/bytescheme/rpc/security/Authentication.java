@@ -4,6 +4,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Authentication model.
+ * @author Naorem Khogendro Singh
+ *
+ */
 public class Authentication {
 	private final String user;
 	private final String password;

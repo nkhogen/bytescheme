@@ -15,6 +15,6 @@
   <properties>
   </properties>
   <modules>
-    <module>rpc</module>
+    <module>controlboard</module>
   </modules>
 </project>

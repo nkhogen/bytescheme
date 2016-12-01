@@ -1,0 +1,7 @@
+sudo systemctl enable /controlboard/bin/controlboard.service
+
+sudo systemctl disable controlboard.service
+
+sudo systemctl start controlboard.service
+
+sudo systemctl stop controlboard.service

@@ -4,6 +4,11 @@ import java.io.Serializable;
 
 import com.google.gson.Gson;
 
+/**
+ *
+ * @author Naorem Khogendro Singh
+ *
+ */
 public class CommandInfo implements Serializable {
   private static final long serialVersionUID = 1L;
 

@@ -1,0 +1,16 @@
+{
+	"00000000-0000-0000-0000-000000000000": {
+		".*":"role1, role2"
+	},
+	
+	"00000000-0000-0000-0000-000000000001": {
+		"hello:0":"role1, role2",
+		"hello:1":"role1, role2",
+		"toString.*":"role1, role2",
+		"changePowerState:2":"role1, role2"
+	},
+	
+	"bfd8dd0a-10db-4782-86ec-b27f52d6362c" : {
+		".*":"role1, role2"
+	}
+}

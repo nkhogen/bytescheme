@@ -1,6 +1,0 @@
-{
-	"nkhogen": {
-		"password": "testpassword",
-		"roles": ["role1", "role2"]
-	}
-}

@@ -19,6 +19,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 
+/**
+ *
+ * @author Naorem Khogendro Singh
+ *
+ */
 public class CommandExecutor {
   private static final Logger LOG = LoggerFactory.getLogger(CommandExecutor.class);
   private static final Gson GSON = new Gson();

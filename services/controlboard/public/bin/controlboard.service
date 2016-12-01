@@ -1,0 +1,15 @@
+[Unit]
+Description=Control Board
+After=syslog.target network.target
+Conflicts=
+
+[Service]
+Type=simple
+PIDFile=/controlboard/run/controlboard.pid
+EnvironmentFile=-/etc/sysconfig/network
+ExecStart=/controlboard/bin/start.sh
+ExecStop=/controlboard/bin/stop.sh
+WorkingDirectory=/controlboard/bin
+
+[Install]
+WantedBy=multi-user.target

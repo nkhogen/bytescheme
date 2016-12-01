@@ -1,11 +1,18 @@
 package com.bytescheme.rpc.core;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class MethodCallRequest {
+/**
+ * Method call model.
+ * @author Naorem Khogendro Singh
+ *
+ */
+public class MethodCallRequest implements Serializable {
+  private static final long serialVersionUID = 1L;
   private UUID objectId;
   private String name;
-  private Object[] parameters;
+  private String[] parameters;
   private UUID requestId;
   private String sessionId;
 
@@ -25,11 +32,11 @@ public class MethodCallRequest {
     this.name = name;
   }
 
-  public Object[] getParameters() {
+  public String[] getParameters() {
     return parameters;
   }
 
-  public void setParameters(Object[] parameters) {
+  public void setParameters(String[] parameters) {
     this.parameters = parameters;
   }
 

@@ -1,6 +1,15 @@
 package com.bytescheme.rpc.core;
 
-public class MethodCallResponse {
+import java.io.Serializable;
+
+/**
+ * Method response model.
+ *
+ * @author Naorem Khogendro Singh
+ *
+ */
+public class MethodCallResponse implements Serializable {
+  private static final long serialVersionUID = 1L;
   private String returnValue;
   private RemoteMethodCallException exception;
 

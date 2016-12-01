@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<script src="scripts/ng-common.js"></script>
+<script src="scripts/ng-main.js"></script>
+<script src="https://apis.google.com/js/platform.js?onload=onLoad" async
+	defer></script>
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<meta name="google-signin-client_id"
+	content="91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com">
+</head>
+<body ng-app="app" ng-controller="controlboard_ctrl"
+	ng-init="init()">
+	<style parse-style>
+.power_off {
+	width: 250px;
+	height: 250px;
+	border: none;
+	background-size: 245px 245px;
+	background-image: url('images/red-off.svg');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+.power_on {
+	width: 250px;
+	height: 250px;
+	border: none;
+	background-size: 245px 245px;
+	background-image: url('images/green-on.png');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+.button_signout {
+	width: 500px;
+	height: 130px;
+	border: none;
+	background-size: 495px 125px;
+	background-image: url('images/signout.jpg');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+h1 {
+ font-size: 100px
+}
+.device {
+	font-family: Arial;
+	color: blue;
+    font-weight: bold;
+	font-size:65px;
+}
+</style>
+	<script>
+		function onLoad() {
+			gapi.load('auth2', function() {
+				gapi.auth2.init();
+			});
+		}
+	</script>
+	<h1>Hello {{user}}</h1>
+	<button class = "button_signout" ng-click="signOut()"></button>
+	<table>
+		<tr ng-repeat="d in devices">
+			<td>
+				<button class={{d.button_css_class}} ng-click="clickHandler(d)"> </button>
+			</td>
+			<td><h1><span class="device">{{d.tag}}</span></h1></td>
+		</tr>
+	</table>
+</html>

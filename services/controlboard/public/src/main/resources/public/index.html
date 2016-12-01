@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<script src="scripts/ng-common.js"></script>
+<script src="scripts/ng-main.js"></script>
+<script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<meta name="google-signin-client_id"
+	content="91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com">
+<head>
+
+<script>
+	
+</script>
+</head>
+<body ng-app="app" ng-controller="auth_ctrl" ng-init="init()">
+	<!--  <div class="g-signin2" data-onsuccess="onSignIn"></div> -->
+	<h1>Hello Guest</h1>
+	<div id="custom-signin2"></div>
+	<script>
+		function renderButton() {
+			gapi.signin2.render('custom-signin2', {
+				'scope' : 'profile email',
+				'width' : 600,
+				'height' : 100,
+				'longtitle' : true,
+				'theme' : 'dark',
+				'onsuccess' : onSignIn,
+				'onfailure' : redirectOnLogout
+			});
+		}
+	</script>
+</body>
+</html>

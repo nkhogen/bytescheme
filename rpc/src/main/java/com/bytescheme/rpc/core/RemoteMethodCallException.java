@@ -2,6 +2,11 @@ package com.bytescheme.rpc.core;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Exception class for all the remote calls.
+ * @author Naorem Khogendro Singh
+ *
+ */
 public class RemoteMethodCallException extends RuntimeException {
   private static final long serialVersionUID = 1L;
 

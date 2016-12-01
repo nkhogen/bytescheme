@@ -1,67 +1,48 @@
 package com.bytescheme.rpc.security;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.io.IOUtils;
-
+import com.bytescheme.common.properties.PropertyChangeListener;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-public class FileAuthenticationProvider implements AuthenticationProvider {
-	private static final Gson GSON = new Gson();
-	private static final Type MAP_TYPE = new TypeToken<Map<String, AuthData>>() {
-	}.getType();
-	private Map<String, AuthData> authDataMap;
+/**
+ * File based authentication provider class.
+ * E.g { "myname@gmail.com": {"password": "**", "roles": ["role1", "role2"] } }
+ *
+ * @author Naorem Khogendro Singh
+ *
+ */
+public class FileAuthenticationProvider
+    implements AuthenticationProvider, PropertyChangeListener<AuthData> {
+  protected final AtomicReference<Map<String, AuthData>> authDataMapRef = new AtomicReference<>(
+      Collections.emptyMap());
 
-	public FileAuthenticationProvider(String jsonFile) throws IOException {
-		Preconditions.checkArgument(!Strings.isNullOrEmpty(jsonFile), "Invalid JSON file");
-		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(jsonFile)));
-		try {
-			this.authDataMap = GSON.fromJson(reader, MAP_TYPE);
-		} finally {
-			IOUtils.closeQuietly(reader);
-		}
-	}
+  public FileAuthenticationProvider(Map<String, AuthData> authDataMap) {
+    Preconditions.checkNotNull(authDataMap, "Invalid auth data map");
+    this.authDataMapRef.set(authDataMap);
+  }
 
-	@Override
-	public Authentication authenticate(Authentication authentication) {
-		AuthData authData = authDataMap.get(authentication.getUser());
-		if (authData == null) {
-			return null;
-		}
-		if (!authData.getPassword().equals(authentication.getPassword())) {
-			return null;
-		}
-		return new Authentication(authentication.getUser(), authData.getPassword(), authData.getRoles());
-	}
+  @Override
+  public Authentication authenticate(Authentication authentication) {
+    Preconditions.checkNotNull(authentication, "Invalid authentication object");
+    Preconditions.checkNotNull(authentication.getUser(), "Invalid user");
+    Map<String, AuthData> authDataMap = authDataMapRef.get();
+    AuthData authData = authDataMap.get(authentication.getUser());
+    if (authData == null) {
+      return null;
+    }
+    if (authData.getPassword().equals(authentication.getPassword())) {
+      return null;
+    }
+    return new Authentication(authentication.getUser(), authData.getPassword(),
+        authData.getRoles());
+  }
 
-	static class AuthData {
-		private String password;
-		private Set<String> roles;
-
-		public String getPassword() {
-			return password;
-		}
-
-		public void setPassword(String password) {
-			this.password = password;
-		}
-
-		public Set<String> getRoles() {
-			return roles;
-		}
-
-		public void setRoles(Set<String> roles) {
-			this.roles = roles;
-		}
-	}
-
+  @Override
+  public void onPropertyChange(Map<String, AuthData> changedProperties,
+      Map<String, AuthData> allProperties) {
+    authDataMapRef.set(allProperties);
+  }
 }
