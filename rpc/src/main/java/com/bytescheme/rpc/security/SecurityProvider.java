@@ -8,9 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.bytescheme.common.paths.PathProcessor;
+import com.bytescheme.rpc.core.Constants;
 import com.bytescheme.rpc.core.MethodCallRequest;
-import com.bytescheme.rpc.core.RemoteAuthenticationException;
-import com.bytescheme.rpc.core.RemoteAuthorizationException;
+import com.bytescheme.rpc.core.RemoteMethodCallException;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
@@ -46,7 +46,7 @@ public class SecurityProvider {
       String msg = String.format("Authentication failed for user %s",
           authentication.getUser());
       LOG.info(msg);
-      throw new RemoteAuthenticationException(msg);
+      throw new RemoteMethodCallException(Constants.AUTHENTICATION_ERROR_CODE, msg);
     }
     return SessionManager.getInstance().addSessionId(authentication,
         createSessionId(authentication.getUser()));
@@ -61,7 +61,7 @@ public class SecurityProvider {
       String msg = String.format("Session not found for request ID %s",
           request.getRequestId());
       LOG.info(msg);
-      throw new RemoteAuthenticationException(msg);
+      throw new RemoteMethodCallException(Constants.AUTHENTICATION_ERROR_CODE, msg);
     }
     Authentication authentication = authenticationProvider
         .authenticate(session.getAuthentication());
@@ -69,7 +69,7 @@ public class SecurityProvider {
       String msg = String.format("Session authentication failed for request ID %s",
           request.getRequestId());
       LOG.info(msg);
-      throw new RemoteAuthenticationException(msg);
+      throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE, msg);
     }
     return authentication;
   }
@@ -97,7 +97,7 @@ public class SecurityProvider {
       String msg = String.format("No matching role found for path %s in request ID %s",
           authPath, request.getRequestId());
       LOG.info(msg);
-      throw new RemoteAuthorizationException(msg);
+      throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE, msg);
     }
     return true;
   }

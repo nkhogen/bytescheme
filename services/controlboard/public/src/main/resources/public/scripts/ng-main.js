@@ -7,7 +7,7 @@ app.controller('auth_ctrl', function($scope, $http) {
 	var globals = getGlobals();
 	$scope.init = function() {
 	};
-	$scope.onSignIn = function(googleUser) {
+	$scope.rpc_login = function(googleUser) {
 		var profile = googleUser.getBasicProfile();
 		var auth = googleUser.getAuthResponse();
 		var user = profile.getName();
@@ -22,34 +22,34 @@ app.controller('auth_ctrl', function($scope, $http) {
 		});
 		$http(request).then(function(response) {
 			console.log(response.data);
-			$scope.session_id = response.data.returnValue;
+			$scope.session = response.data.returnValue;
 			if (response.data.exception === null) {
-				window.sessionStorage.setItem("session", $scope.session_id);
-				window.sessionStorage.setItem("user", profile.getName());
-				window.sessionStorage.setItem("email", email);
-				console.log($scope.session_id);
+				setCookie("session", $scope.session);
+				setCookie("user", profile.getName());
+				setCookie("email", email);
+				console.log($scope.session);
 				redirectOnLogin();
 			}
 		});
 	};
-	window.onSignIn = $scope.onSignIn;
 });
 app.controller('controlboard_ctrl', function($scope, $http, $timeout) {
 	var globals = getGlobals();
 	$scope.init = function() {
 		$scope.power_state = 0;
 		$scope.power_img = globals.poweroff_img;
-		$scope.session = window.sessionStorage.getItem("session");
+		$scope.session = getCookie("session");
 		if ($scope.session === null) {
 			redirectOnLogout();
 		}
-		$scope.user = window.sessionStorage.getItem("user");
-		$scope.email = window.sessionStorage.getItem("email");
+		$scope.user = getCookie("user");
+		$scope.email = getCookie("email");
 		var payload = createHttpPayload($scope.session, globals.root_object_id,
 				"getControlBoard", [$scope.email]);
 		var request = createPostRequest(globals.rpc_url, payload);
 		console.log('Calling getControlBoard');
 		$http(request).then(function(response) {
+			console.log('getControlBoard: '+JSON.stringify(response.data.exception ));
 			console.log('getControlBoard: '+response.data.returnValue);
 			if (response.data.returnValue) {
 				$scope.control_object_id = JSON.parse(response.data.returnValue)["::objId"];
@@ -61,6 +61,22 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout) {
 			}
 		});
 	};
+
+	$scope.rpc_logout = function() {
+		var request = createPostRequest(globals.logout_url, {
+			sessionId : $scope.session,
+			requestId : guid()
+		});
+		$http(request).then(function(response) {
+			console.log(response.data);
+			$scope.session = null;
+			deleteCookie("session");
+			deleteCookie("user");
+			deleteCookie("email");
+			redirectOnLogout();
+		});
+	};
+
 	$scope.periodicFunction = function() {
 		var payload = createHttpPayload($scope.session,
 				$scope.control_object_id, "listDevices", null);
@@ -74,34 +90,19 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout) {
 					$scope.devices.push($scope.displayDevice(devices[device]["::value"]));
 				}
 			}
+			return response.data.exception;
 		});
 	};
 	// Function to replicate setInterval using $timeout service
 	// (5s).
 	$scope.intervalFunction = function() {
 		$timeout(function() {
-			$scope.periodicFunction();
-			$scope.intervalFunction();
+			var e = $scope.periodicFunction();
+			if (!checkException(e)) {
+				$scope.intervalFunction();
+			}
 		}, globals.func_interval)
 	};
-
-	$scope.signOut = function() {
-		var auth2 = gapi.auth2.getAuthInstance();
-		auth2.signOut().then(function() {
-			var request = createPostRequest(globals.logout_url, {
-				sessionId : $scope.session,
-				requestId : guid()
-			});
-			$http(request).then(function(response) {
-				console.log(response.data);
-			});
-			$scope.session_id = null;
-			window.sessionStorage.clear();
-			redirectOnLogout();
-			console.log('User signed out.');
-		});
-	}
-	window.signOut = $scope.signOut;
 	$scope.displayDevice = function(device) {
 		var extendedDevice = null;
 		if (device.powerOn) {
@@ -124,6 +125,9 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout) {
 		$http(request).then(function(response) {
 			console.log("Response for changePowerStatus: " + response.data.returnValue);
 			if (response.data.returnValue == null) {
+				if (checkException(response.data.exception)) {
+					redirectOnLogout();
+				}
 				return;
 			}
 			var device = JSON.parse(response.data.returnValue);

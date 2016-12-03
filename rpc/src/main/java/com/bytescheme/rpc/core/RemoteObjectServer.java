@@ -115,7 +115,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
         }
       }
       if (session == null) {
-        throw new RemoteAuthenticationException(
+        throw new RemoteMethodCallException(Constants.AUTHENTICATION_ERROR_CODE,
             String.format("Failed to authenticate user %s", request.getUser()));
       }
       response.setReturnValue(session.getId());
@@ -123,7 +123,8 @@ public class RemoteObjectServer implements RemoteObjectListener {
       exception = e;
     } catch (Exception e) {
       LOG.error("Error occurred in login", e);
-      exception = new RemoteMethodCallException("Error occurred in login", e);
+      exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+          "Error occurred in login", e);
     } finally {
       MethodCallRecorder.uninit((requestId, elapsedTime, methodTime) -> {
         LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "login", elapsedTime,
@@ -156,7 +157,8 @@ public class RemoteObjectServer implements RemoteObjectListener {
       exception = e;
     } catch (Exception e) {
       LOG.error("Error occurred in logout", e);
-      exception = new RemoteMethodCallException("Error occurred in logout", e);
+      exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+          "Error occurred in logout", e);
     } finally {
       MethodCallRecorder.uninit((requestId, elapsedTime, methodTime) -> {
         LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "logout", elapsedTime,
@@ -212,14 +214,19 @@ public class RemoteObjectServer implements RemoteObjectListener {
       Object returnObj = method.invoke(object, parameters);
       response.setReturnValue(messageCodec.getJson(returnObj));
     } catch (InvocationTargetException e) {
-      LOG.error("Error occurred in server", e);
-      exception = new RemoteMethodCallException("Error occurred in server",
-          e.getTargetException());
+      LOG.error("Error occurred in server", e.getTargetException());
+      if (e.getTargetException() instanceof RemoteMethodCallException) {
+        exception = (RemoteMethodCallException) e.getTargetException();
+      } else {
+        exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+            "Error occurred in server", e.getTargetException());
+      }
     } catch (RemoteMethodCallException e) {
       exception = e;
     } catch (Exception e) {
       LOG.error("Error occurred in server", e);
-      exception = new RemoteMethodCallException("Error occurred in server", e);
+      exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+          "Error occurred in server", e);
     } finally {
       MethodCallRecorder.uninit((requestId, elapsedTime, methodTime) -> {
         LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "process", elapsedTime,
@@ -258,13 +265,14 @@ public class RemoteObjectServer implements RemoteObjectListener {
         String msg = String.format("Error occurred in security check for request ID %s",
             request.getRequestId());
         LOG.error(msg, e);
-        exception = new RemoteMethodCallException(msg, e);
+        exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE, msg, e);
       }
     }
     if (exception != null) {
       throw exception;
     }
-    throw new RemoteAuthorizationException("Unauthorized user");
+    throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE,
+        "Unauthorized user");
   }
 
   private class ClassMetaData {

@@ -11,10 +11,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.bytescheme.common.properties.FilePropertyChangePublisher;
 import com.bytescheme.common.properties.PropertyChangePublisher;
 import com.bytescheme.common.utils.CryptoUtils;
-import com.bytescheme.rpc.core.RemoteAuthenticationException;
+import com.bytescheme.rpc.core.Constants;
 import com.bytescheme.rpc.core.RemoteMethodCallException;
 import com.bytescheme.rpc.core.RemoteObject;
 import com.bytescheme.rpc.core.RemoteObjectClient;
@@ -28,12 +31,13 @@ import com.google.common.base.Strings;
 
 /**
  * Root object implementation.
- * 
+ *
  * @author Naorem Khogendro Singh
  *
  */
 public class RootImpl implements Root, RemoteObjectFactory {
   private static final long serialVersionUID = 1L;
+  private static final Logger LOG = LoggerFactory.getLogger(RootImpl.class);
   private static final int CLIENT_RETRY_LIMIT = 3;
   private static final UUID OBJECT_ID = new UUID(0L, 0L);
   private static final String TARGET_USER = "controlboard";
@@ -103,7 +107,8 @@ public class RootImpl implements Root, RemoteObjectFactory {
       ControlBoard remoteControlBoard = createRemoteObject(ControlBoard.class, objectId);
       return new DelegateControlBoardImpl(objectId, remoteControlBoard);
     } catch (Exception e) {
-      throw new RemoteMethodCallException("Failed to create the control board", e);
+      throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+          "Failed to create the control board", e);
     }
   }
 
@@ -133,6 +138,9 @@ public class RootImpl implements Root, RemoteObjectFactory {
     int retry = 0;
     int parameterCount = (args == null) ? 0 : 1;
     do {
+      if (retry > 0) {
+        LOG.info("Retrying delegated method call {}", retry);
+      }
       RemoteObjectClient client = clients.get(endpoint);
       if (client == null) {
         synchronized (clients) {
@@ -158,28 +166,45 @@ public class RootImpl implements Root, RemoteObjectFactory {
         }
         try {
           return m.invoke(object, args);
-        } catch (RemoteAuthenticationException e) {
-          clients.remove(endpoint, object);
-          retry++;
-        } catch (InvocationTargetException e) {
-          if (e.getTargetException() instanceof RemoteAuthenticationException) {
+        } catch (RemoteMethodCallException e) {
+          LOG.error("Error occurred in delegated method call", e);
+          if (e.getCode() == Constants.AUTHENTICATION_ERROR_CODE) {
             clients.remove(endpoint, object);
             retry++;
+            break;
           } else {
-            throw new RuntimeException("Exception in remote method invocation",
-                e.getTargetException());
+            throw e;
+          }
+        } catch (InvocationTargetException e) {
+          LOG.error("Error occurred in delegated method call", e.getTargetException());
+          if (e.getTargetException() instanceof RemoteMethodCallException) {
+            RemoteMethodCallException exception = (RemoteMethodCallException) e
+                .getTargetException();
+            if (exception.getCode() == Constants.AUTHENTICATION_ERROR_CODE) {
+              clients.remove(endpoint, object);
+              retry++;
+              break;
+            } else {
+              throw exception;
+            }
+          } else {
+            throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+                "Exception in remote method invocation", e.getTargetException());
           }
         } catch (Exception e) {
-          throw new RuntimeException("Exception in remote method invocation", e);
+          LOG.error("Error occurred in delegated method call", e);
+          throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+              "Exception in remote method invocation", e);
         }
       }
     } while (retry < CLIENT_RETRY_LIMIT);
     if (retry == 0) {
-      throw new RemoteMethodCallException(
+      throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
           String.format("Method %s:%d not found in class %s", method.getName(),
               parameterCount, clazz.getName()));
     }
-    throw new RemoteMethodCallException("Retry limit exceeded in client call");
+    throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+        "Retry limit exceeded in client call");
   }
 
 }

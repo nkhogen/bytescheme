@@ -16,6 +16,7 @@ import com.bytescheme.service.controlboard.remoteobjects.RootImpl;
 
 /**
  * Bean configuration.
+ * 
  * @author Naorem Khogendro Singh
  *
  */
