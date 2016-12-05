@@ -21,12 +21,12 @@
 	<script>
 		function onLoad() {
 			gapi.load('auth2', function() {
-				gapi.auth2.init();
-				renderButton();
+				gapi.auth2.init().then(function() {
+					renderButton();
+				});
 			});
 		};
 		function renderButton() {
-			gapi.auth2.init();
 			gapi.signin2.render('custom-signin2', {
 				'scope' : 'profile email',
 				'width' : 600,
