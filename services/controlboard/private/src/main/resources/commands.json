@@ -1,2 +1,2 @@
-{"script":"/usr/local/bin/ffmpeg -s 640x480 -r 30 -f avfoundation -i \"0:0\" -f mpeg1video -b 800k https://127.0.0.1:8443/rpc/video/640/480/" }
+{"script":"/usr/local/bin/ffmpeg -s 640x480 -r 30 -f avfoundation -i \"0:0\" -f mpeg1video -b 800k https://127.0.0.1:8443/video/640/480/" }
 {"script": "sleep 5", "isWait": true}

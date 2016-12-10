@@ -78,9 +78,6 @@ public class VideoBroadcastHandler {
       if (sessions.size() == 0 || executor.getProcessCount() == 0) {
         start(false);
       }
-      sessions.put(secret, session);
-    }
-    try {
       Basic basic = session.getBasicRemote();
       ByteBuffer byteBuffer = ByteBuffer.allocate(8);
       byteBuffer.order(ByteOrder.BIG_ENDIAN);
@@ -92,9 +89,7 @@ public class VideoBroadcastHandler {
       byteBuffer.position(8);
       byteBuffer.flip();
       basic.sendBinary(byteBuffer);
-    } catch (Exception e) {
-      LOG.error("Failed to register the client", e);
-      unregisterConnection(session);
+      sessions.put(secret, session);
     }
   }
 
@@ -144,7 +139,7 @@ public class VideoBroadcastHandler {
     if (currSession != null) {
       return (session == currSession);
     }
-    if (secrets.contains(secret)) {
+    if (secrets.contains(new Secret(secret, 0L))) {
       return true;
     }
     return false;

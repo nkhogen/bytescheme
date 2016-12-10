@@ -14,8 +14,8 @@ import com.bytescheme.rpc.core.RemoteObjectServer;
 import com.bytescheme.rpc.security.AuthData;
 import com.bytescheme.rpc.security.RSAAuthenticationProvider;
 import com.bytescheme.rpc.security.SecurityProvider;
-import com.bytescheme.service.controlboard.common.remoteobjects.MockControlBoardImpl;
 import com.bytescheme.service.controlboard.remoteobjects.TargetControlBoardImpl;
+import com.bytescheme.service.controlboard.remoteobjects.TargetMockControlBoardImpl;
 import com.bytescheme.service.controlboard.video.VideoBroadcastHandler;
 import com.bytescheme.service.controlboard.video.VideoServer;
 
@@ -45,15 +45,8 @@ public class ServiceConfiguration {
       map.put(Integer.parseInt(entry.getKey()), entry.getValue());
     }
     if (serviceProperties.isEnableMock()) {
-      server.register(new MockControlBoardImpl(serviceProperties.getObjectId()) {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public String getVideoUrl() {
-          String secret = VideoBroadcastHandler.getInstance().generateSecret();
-          return String.format(serviceProperties.getVideoUrlFormat(), secret);
-        }
-      });
+      server.register(new TargetMockControlBoardImpl(serviceProperties.getObjectId(),
+          serviceProperties.getVideoUrlFormat()));
     } else {
       server.register(new TargetControlBoardImpl(serviceProperties.getObjectId(), map,
           serviceProperties.getVideoUrlFormat()));

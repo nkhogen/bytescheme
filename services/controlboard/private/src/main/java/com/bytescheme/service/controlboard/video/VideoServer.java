@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author Naorem Khogendro Singh
  *
  */
-@ServerEndpoint(value = "/video/{secretId}")
+@ServerEndpoint(value = "/video/{secret}")
 public class VideoServer {
   private static final Logger LOG = LoggerFactory.getLogger(VideoServer.class);
 
@@ -33,9 +33,11 @@ public class VideoServer {
       @PathParam("secret") String secret) throws IOException {
     LOG.info("Connected client {}", session.toString());
     if (VideoBroadcastHandler.getInstance().isValidSecret(secret, session)) {
+      LOG.info("Secret recognized");
       VideoBroadcastHandler.getInstance().registerConnection(secret, session);
     } else {
-      session.close(new CloseReason(CloseCodes.VIOLATED_POLICY, "Invalid se"));
+      LOG.info("Unrecognized secret");
+      session.close(new CloseReason(CloseCodes.VIOLATED_POLICY, "Invalid secret"));
     }
   }
 
