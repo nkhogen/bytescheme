@@ -35,7 +35,8 @@ public class ServiceConfiguration {
         serviceProperties.getBaseDir() + serviceProperties.getAuthenticationJsonFile(),
         AuthData.class);
     GoogleAuthenticationProvider googleAuthenticationProvider = new GoogleAuthenticationProvider(
-        authenticationPublisher.getCurrentProperties());
+        authenticationPublisher.getCurrentProperties(),
+        serviceProperties.getGoogleClientId());
     authenticationPublisher.registerListener(googleAuthenticationProvider);
     PathProcessor pathProcessor = new PathProcessor(
         authorizationPublisher.getCurrentProperties());

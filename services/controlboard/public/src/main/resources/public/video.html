@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel='shortcut icon' href='images/favicon.ico' type='image/x-icon' />
 <meta name="viewport" content="width=320, initial-scale=1" />
-<title>jsmpeg streaming</title>
+<title>Device Controller</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<script src="scripts/ng-common.js"></script>
 <style type="text/css">
 body {
 	background: #333;
@@ -31,9 +34,9 @@ body {
 			<a href="http://www.apple.com/safari/">Safari</a> or Internet Explorer 10
 		</p>
 	</canvas>
-	<script type="text/javascript" src="images/jsmpg.js"></script>
+	<script type="text/javascript" src="scripts/jsmpg.js"></script>
 	<script type="text/javascript">
-		var client = new WebSocket(getCookie("video"));
+		var client = new WebSocket(getCookie("video").replace(/"/g, ""));
 		var canvas = document.getElementById('videoCanvas');
 		var player = new jsmpeg(client, {
 			canvas : canvas

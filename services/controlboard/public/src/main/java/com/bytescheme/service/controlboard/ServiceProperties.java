@@ -4,6 +4,9 @@ import javax.annotation.PostConstruct;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import com.google.api.client.repackaged.com.google.common.base.Preconditions;
+import com.google.api.client.repackaged.com.google.common.base.Strings;
+
 /**
  * Service configuration properties from application.properties.
  * 
@@ -13,6 +16,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "controlboard")
 public class ServiceProperties {
   private String baseDir;
+  private String googleClientId;
   private String objectsJsonFile;
   private String endpointsJsonFile;
   private String sshKeysDir;
@@ -40,6 +44,8 @@ public class ServiceProperties {
     if (authorizationJsonFile == null) {
       authorizationJsonFile = "/security/auth/authorization.json";
     }
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(googleClientId),
+        "Invalid Google client ID");
   }
 
   public String getBaseDir() {
@@ -48,6 +54,14 @@ public class ServiceProperties {
 
   public void setBaseDir(String baseDir) {
     this.baseDir = baseDir;
+  }
+
+  public String getGoogleClientId() {
+    return googleClientId;
+  }
+
+  public void setGoogleClientId(String googleClientId) {
+    this.googleClientId = googleClientId;
   }
 
   public String getObjectsJsonFile() {

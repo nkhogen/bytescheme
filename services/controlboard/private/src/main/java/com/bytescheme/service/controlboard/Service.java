@@ -56,7 +56,7 @@ public class Service {
     broadcaster.broadcast(stream, width, height);
   }
 
-  @RequestMapping(method = RequestMethod.GET, consumes = "*")
+  @RequestMapping(path = "/ping", method = RequestMethod.GET, consumes = "*")
   public @ResponseBody String ping() {
     return "OK";
   }

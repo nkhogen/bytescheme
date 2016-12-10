@@ -22,32 +22,32 @@ import com.bytescheme.rpc.core.RemoteObjectServer;
  */
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping(path = "/rpc", consumes = "application/json", produces = "application/json; charset=UTF-8")
+@RequestMapping(consumes = "application/json", produces = "application/json; charset=UTF-8")
 public class Service {
   @Autowired
   private RemoteObjectServer remoteObjectServer;
 
-  @RequestMapping(path = "/login", method = RequestMethod.POST)
+  @RequestMapping(path = "/rpc/login", method = RequestMethod.POST)
   public @ResponseBody MethodCallResponse login(@RequestBody LoginCallRequest request) {
     return remoteObjectServer.login(request);
   }
 
-  @RequestMapping(path = "/logout", method = RequestMethod.POST)
+  @RequestMapping(path = "/rpc/logout", method = RequestMethod.POST)
   public @ResponseBody MethodCallResponse logout(@RequestBody LogoutCallRequest request) {
     return remoteObjectServer.logout(request);
   }
 
-  @RequestMapping(method = RequestMethod.POST)
+  @RequestMapping(path = "/rpc", method = RequestMethod.POST)
   public @ResponseBody MethodCallResponse invoke(@RequestBody MethodCallRequest request) {
     return remoteObjectServer.process(request);
   }
 
-  @RequestMapping(path = "/keys", method = RequestMethod.GET, consumes = "*")
+  @RequestMapping(path = "/rpc/keys", method = RequestMethod.GET, consumes = "*")
   public @ResponseBody String[] createKeyPair() {
     return CryptoUtils.createKeyPair();
   }
 
-  @RequestMapping(method = RequestMethod.GET, consumes = "*")
+  @RequestMapping(path = "/ping", method = RequestMethod.GET, consumes = "*")
   public @ResponseBody String ping() {
     return "OK";
   }

@@ -17,13 +17,13 @@ import com.google.api.client.util.Preconditions;
  * @author Naorem Khogendro Singh
  *
  */
-public abstract class MockControlBoardImpl implements ControlBoard {
-  private static Logger LOG = LoggerFactory.getLogger(MockControlBoardImpl.class);
+public class BaseMockControlBoard implements ControlBoard {
+  private static Logger LOG = LoggerFactory.getLogger(BaseMockControlBoard.class);
   private static final long serialVersionUID = 1L;
   private final UUID objectId;
   private final Map<Integer, DeviceStatus> devices = new ConcurrentHashMap<>();
 
-  public MockControlBoardImpl(UUID objectId) {
+  public BaseMockControlBoard(UUID objectId) {
     Preconditions.checkNotNull(objectId, "Invalid object ID");
     this.objectId = objectId;
     for (int i = 0; i < 10; i++) {
@@ -57,5 +57,7 @@ public abstract class MockControlBoardImpl implements ControlBoard {
   }
 
   @Override
-  public abstract String getVideoUrl();
+  public String getVideoUrl() {
+    throw new UnsupportedOperationException();
+  }
 }

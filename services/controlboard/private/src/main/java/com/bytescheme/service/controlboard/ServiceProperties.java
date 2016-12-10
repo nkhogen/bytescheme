@@ -37,9 +37,10 @@ public class ServiceProperties {
     if (authenticationJsonFile == null) {
       authenticationJsonFile = "/security/auth/authentication.json";
     }
-    Preconditions.checkNotNull(devices);
-    Preconditions.checkNotNull(objectId);
-    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat));
+    Preconditions.checkNotNull(devices, "Invalid devices");
+    Preconditions.checkNotNull(objectId, "Invalid object ID");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat),
+        "Invalid video URL format");
   }
 
   public String getBaseDir() {

@@ -87,9 +87,11 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 			if (response.data.returnValue) {
 				var devices = JSON.parse(response.data.returnValue);
 				$scope.devices = [];
+				$scope.videos = [];
 				for (var device in devices) {
 					$scope.devices.push($scope.displayDevice(devices[device]["::value"]));
 				}
+				$scope.videos.push("Start Video");
 			}
 			return response.data.exception;
 		});
@@ -124,7 +126,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 				return;
 			}
 			setCookie("video", videoUrl);
-			$window.open(url('video.html'), '_blank');
+			$window.open('video.html', '_blank', 'fullscreen=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no');
 		});
 	};
 

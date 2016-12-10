@@ -14,6 +14,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 
 /**
  * Google OAuth based authenticator. The roles come from a file.
@@ -25,16 +26,16 @@ public class GoogleAuthenticationProvider extends FileAuthenticationProvider {
   private static final Logger LOG = LoggerFactory
       .getLogger(GoogleAuthenticationProvider.class);
   private static final String ISSUER = "accounts.google.com";
-  private static final String CLIENT_ID = "91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com";
   private final GoogleIdTokenVerifier verifier;
 
-  public GoogleAuthenticationProvider(Map<String, AuthData> authDataMap)
+  public GoogleAuthenticationProvider(Map<String, AuthData> authDataMap, String clientId)
       throws IOException, GeneralSecurityException {
     super(authDataMap);
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(clientId), "Invalid Google client ID");
     NetHttpTransport transport = new NetHttpTransport.Builder().doNotValidateCertificate()
         .build();
     verifier = new GoogleIdTokenVerifier.Builder(transport, new GsonFactory())
-        .setAudience(Arrays.asList(CLIENT_ID))
+        .setAudience(Arrays.asList(clientId))
         // If you retrieved the token on Android using the Play Services 8.3
         // API or newer, set
         // the issuer to "https://accounts.google.com". Otherwise, set the

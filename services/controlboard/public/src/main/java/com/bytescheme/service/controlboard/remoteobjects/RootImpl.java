@@ -24,7 +24,7 @@ import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
 import com.bytescheme.rpc.core.RemoteObjectFactory;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
-import com.bytescheme.service.controlboard.common.remoteobjects.MockControlBoardImpl;
+import com.bytescheme.service.controlboard.common.remoteobjects.BaseMockControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -102,14 +102,7 @@ public class RootImpl implements Root, RemoteObjectFactory {
     UUID objectId = UUID.fromString(objectIdStr);
     try {
       if (enableMock) {
-        return new MockControlBoardImpl(objectId) {
-          private static final long serialVersionUID = 1L;
-
-          @Override
-          public String getVideoUrl() {
-            throw new UnsupportedOperationException();
-          }
-        };
+        return new BaseMockControlBoard(objectId);
       }
       ControlBoard remoteControlBoard = createRemoteObject(ControlBoard.class, objectId);
       return new DelegateControlBoardImpl(objectId, remoteControlBoard);

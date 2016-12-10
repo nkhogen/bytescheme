@@ -47,6 +47,7 @@ function getGlobals() {
 	var domain = "controller.bytescheme.com";
 	var home_url = scheme + domain;
 	var globals = {
+		client_id : "91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com",
 		login_page : home_url,
 		login_url : home_url + '/rpc/login',
 		logout_url : home_url + '/rpc/logout',
@@ -63,7 +64,7 @@ function getGlobals() {
 
 function redirectOnLogin() {
 	var globals = getGlobals();
-	var url = "https://accounts.google.com/o/oauth2/v2/auth?scope=email&client_id=91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com&redirect_uri="
+	var url = "https://accounts.google.com/o/oauth2/v2/auth?scope=email&client_id="+globals.client_id+"&redirect_uri="
 			+ globals.success_redirect + "&response_type=token";
 	window.location.replace(url);
 };

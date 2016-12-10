@@ -2,7 +2,7 @@
 <html lang="en-US">
 <head>
 <link rel='shortcut icon' href='images/favicon.ico' type='image/x-icon' />
-<link rel="stylesheet" type="text/css" href="css/style.css" />
+<title>Device Controller</title>
 <meta name="google-signin-client_id"
 	content="91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com">
 <script
@@ -12,7 +12,6 @@
 <script src="https://apis.google.com/js/platform.js?onload=onLoad" async
 	defer></script>
 <link rel="stylesheet" type="text/css" href="css/style.css" />
-<title>Device Controller</title>
 </head>
 <body ng-app="app" ng-controller="controlboard_ctrl" ng-init="init()">
 	<style parse-style>
@@ -36,6 +35,18 @@
 	background-color: Transparent;
 	background-position: center;
 	background-repeat: no-repeat;
+}
+
+.play_video {
+	width: 220px;
+	height: 220px;
+	border: none;
+	background-size: 210px 210px;
+	background-image: url('images/video-play.png');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+	margin-left: 20px;
 }
 
 .button_signout {
@@ -74,12 +85,11 @@ h1 {
 	<h1>Hello {{user}}</h1>
 	<button class="button_signout" onclick="signOut()"></button>
 	<table>
-		<tr>
+		<tr ng-repeat="v in videos">
 			<td>
-				<button class="power_off" ng-click="startVideo()">
-				</button>
+				<button class="play_video" ng-click="startVideo()"></button>
 			</td>
-			<td><span class="device">Video</span></td>
+			<td><span class="device">{{v}}</span></td>
 		</tr>
 		<tr ng-repeat="d in devices">
 			<td>
