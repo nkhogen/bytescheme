@@ -33,7 +33,7 @@ app.controller('auth_ctrl', function($scope, $http) {
 		});
 	};
 });
-app.controller('controlboard_ctrl', function($scope, $http, $timeout) {
+app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 	var globals = getGlobals();
 	$scope.init = function() {
 		$scope.power_state = 0;
@@ -73,6 +73,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout) {
 			deleteCookie("session");
 			deleteCookie("user");
 			deleteCookie("email");
+			deleteCookie("video");
 			redirectOnLogout();
 		});
 	};
@@ -112,6 +113,21 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout) {
 		}
 		return extendedDevice;
 	};
+
+	$scope.startVideo = function() {
+		var payload = createHttpPayload($scope.session, $scope.control_object_id, "getVideoUrl", null);
+		var request = createPostRequest(globals.rpc_url, payload);
+		$http(request).then(function(response) {
+			var videoUrl = response.data.returnValue;
+			console.log("Response for getVideoUrl: " + videoUrl);
+			if (videoUrl == null) {
+				return;
+			}
+			setCookie("video", videoUrl);
+			$window.open(url('video.html'), '_blank');
+		});
+	};
+
 	/* Click handler starts */
 	$scope.clickHandler = function(device) {
 		var next_device = {

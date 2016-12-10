@@ -13,4 +13,6 @@ public interface ControlBoard extends RemoteObject {
 	List<DeviceStatus> listDevices();
 
 	DeviceStatus changePowerStatus(DeviceStatus status);
+
+	String getVideoUrl();
 }

@@ -15,15 +15,13 @@ import javax.websocket.server.ServerEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.bytescheme.rpc.security.SessionManager;
-
 /**
  * Websocket server to accept client connections.
  *
  * @author Naorem Khogendro Singh
  *
  */
-@ServerEndpoint(value = "/video/{sessionId}")
+@ServerEndpoint(value = "/video/{secretId}")
 public class VideoServer {
   private static final Logger LOG = LoggerFactory.getLogger(VideoServer.class);
 
@@ -32,12 +30,12 @@ public class VideoServer {
 
   @OnOpen
   public void handleConnection(EndpointConfig config, Session session,
-      @PathParam("sessionId") String sessionId) throws IOException {
+      @PathParam("secret") String secret) throws IOException {
     LOG.info("Connected client {}", session.toString());
-    if (SessionManager.getInstance().getSession(sessionId) == null) {
-      session.close(new CloseReason(CloseCodes.VIOLATED_POLICY, "Invalid session"));
+    if (VideoBroadcastHandler.getInstance().isValidSecret(secret, session)) {
+      VideoBroadcastHandler.getInstance().registerConnection(secret, session);
     } else {
-      VideoBroadcastHandler.getInstance().registerConnection(session);
+      session.close(new CloseReason(CloseCodes.VIOLATED_POLICY, "Invalid se"));
     }
   }
 

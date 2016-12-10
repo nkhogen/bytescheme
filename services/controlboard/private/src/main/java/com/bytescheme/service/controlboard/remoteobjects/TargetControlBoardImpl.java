@@ -7,10 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.collections4.MapUtils;
+
 import com.bytescheme.service.controlboard.common.models.DeviceStatus;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.gpio.GpioUtils;
+import com.bytescheme.service.controlboard.video.VideoBroadcastHandler;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
+import com.google.api.client.repackaged.com.google.common.base.Strings;
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
@@ -18,7 +22,9 @@ import com.pi4j.io.gpio.PinState;
 
 /**
  * Actual communication with the Raspberry pi happens here.
- * @see <a href="http://pi4j.com/example/control.html">http://pi4j.com/example/control.html</a>
+ *
+ * @see <a href="http://pi4j.com/example/control.html">http://pi4j.com/example/
+ *      control.html</a>
  * 
  * @author Naorem Khogendro Singh
  *
@@ -27,10 +33,17 @@ public class TargetControlBoardImpl implements ControlBoard {
   private static final long serialVersionUID = 1L;
   private final UUID objectId;
   private final GpioController gpio;
+  private final String videoUrlFormat;
   private final Map<Integer, SimpleEntry<DeviceStatus, GpioPinDigitalOutput>> devicesMap = new HashMap<>();
 
-  public TargetControlBoardImpl(UUID objectId, Map<Integer, String> tags) {
+  public TargetControlBoardImpl(UUID objectId, Map<Integer, String> tags,
+      String videoUrlFormat) {
+    Preconditions.checkNotNull(objectId, "Invalid object ID");
+    Preconditions.checkNotNull(MapUtils.isEmpty(tags), "Invalid tags");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat),
+        "Invalid video URL format");
     this.objectId = objectId;
+    this.videoUrlFormat = videoUrlFormat;
     this.gpio = GpioFactory.getInstance();
     for (Map.Entry<Integer, String> tagEntry : tags.entrySet()) {
       DeviceStatus device = new DeviceStatus();
@@ -69,5 +82,11 @@ public class TargetControlBoardImpl implements ControlBoard {
     deviceEntry.getValue().setState(device.isPowerOn() ? PinState.HIGH : PinState.LOW);
     deviceEntry.getKey().setPowerOn(deviceEntry.getValue().getState() == PinState.HIGH);
     return deviceEntry.getKey();
+  }
+
+  @Override
+  public String getVideoUrl() {
+    String secret = VideoBroadcastHandler.getInstance().generateSecret();
+    return String.format(videoUrlFormat, secret);
   }
 }

@@ -3,13 +3,14 @@
 <head>
 <link rel='shortcut icon' href='images/favicon.ico' type='image/x-icon' />
 <link rel="stylesheet" type="text/css" href="css/style.css" />
- <meta name="google-signin-client_id"
+<meta name="google-signin-client_id"
 	content="91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com">
 <script
 	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
 <script src="scripts/ng-common.js"></script>
 <script src="scripts/ng-main.js"></script>
-<script src="https://apis.google.com/js/platform.js?onload=onLoad" async defer></script>
+<script src="https://apis.google.com/js/platform.js?onload=onLoad" async
+	defer></script>
 <link rel="stylesheet" type="text/css" href="css/style.css" />
 <title>Device Controller</title>
 </head>
@@ -73,6 +74,13 @@ h1 {
 	<h1>Hello {{user}}</h1>
 	<button class="button_signout" onclick="signOut()"></button>
 	<table>
+		<tr>
+			<td>
+				<button class="power_off" ng-click="startVideo()">
+				</button>
+			</td>
+			<td><span class="device">Video</span></td>
+		</tr>
 		<tr ng-repeat="d in devices">
 			<td>
 				<button class={{d.button_css_class}} ng-click="clickHandler(d)">

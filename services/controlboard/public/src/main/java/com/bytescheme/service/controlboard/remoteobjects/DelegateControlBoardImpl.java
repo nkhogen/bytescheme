@@ -39,4 +39,9 @@ public class DelegateControlBoardImpl implements ControlBoard {
     return remoteControlBoard.changePowerStatus(status);
   }
 
+  @Override
+  public String getVideoUrl() {
+    return remoteControlBoard.getVideoUrl();
+  }
+
 }

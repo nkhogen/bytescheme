@@ -17,7 +17,7 @@ import com.google.api.client.util.Preconditions;
  * @author Naorem Khogendro Singh
  *
  */
-public class MockControlBoardImpl implements ControlBoard {
+public abstract class MockControlBoardImpl implements ControlBoard {
   private static Logger LOG = LoggerFactory.getLogger(MockControlBoardImpl.class);
   private static final long serialVersionUID = 1L;
   private final UUID objectId;
@@ -56,4 +56,6 @@ public class MockControlBoardImpl implements ControlBoard {
     return device;
   }
 
+  @Override
+  public abstract String getVideoUrl();
 }

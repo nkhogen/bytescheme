@@ -27,7 +27,7 @@ public class HttpToHttpsJettyCustomizer implements EmbeddedServletContainerCusto
         http.setSecureScheme("https");
         ServerConnector connector = new ServerConnector(server);
         connector.addConnectionFactory(new HttpConnectionFactory(http));
-        connector.setPort(80);
+        connector.setPort(8080);
         server.addConnector(connector);
       });
     }

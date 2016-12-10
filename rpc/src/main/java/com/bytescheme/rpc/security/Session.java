@@ -19,14 +19,14 @@ public class Session implements Delayed {
   private final long creationTime;
   private long expiryTime;
 
-  public Session(Authentication authentication, String id, long expiry) {
+  public Session(Authentication authentication, String id, long expiryTime) {
     Preconditions.checkNotNull(authentication);
     Preconditions.checkArgument(!Strings.isNullOrEmpty(id));
-    Preconditions.checkArgument(expiry > System.currentTimeMillis());
+    Preconditions.checkArgument(expiryTime > System.currentTimeMillis());
     this.authentication = authentication;
     this.id = id;
     this.creationTime = System.currentTimeMillis();
-    this.expiryTime = expiry;
+    this.expiryTime = expiryTime;
   }
 
   public Authentication getAuthentication() {

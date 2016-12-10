@@ -45,9 +45,18 @@ public class ServiceConfiguration {
       map.put(Integer.parseInt(entry.getKey()), entry.getValue());
     }
     if (serviceProperties.isEnableMock()) {
-      server.register(new MockControlBoardImpl(serviceProperties.getObjectId()));
+      server.register(new MockControlBoardImpl(serviceProperties.getObjectId()) {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public String getVideoUrl() {
+          String secret = VideoBroadcastHandler.getInstance().generateSecret();
+          return String.format(serviceProperties.getVideoUrlFormat(), secret);
+        }
+      });
     } else {
-      server.register(new TargetControlBoardImpl(serviceProperties.getObjectId(), map));
+      server.register(new TargetControlBoardImpl(serviceProperties.getObjectId(), map,
+          serviceProperties.getVideoUrlFormat()));
     }
     return server;
   }

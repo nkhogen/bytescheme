@@ -8,10 +8,11 @@ import javax.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
-
+import com.google.api.client.repackaged.com.google.common.base.Strings;
 
 /**
  * Configurations from application.properties.
+ *
  * @author Naorem Khogendro Singh
  *
  */
@@ -20,6 +21,7 @@ public class ServiceProperties {
   private String baseDir;
   private String sshKeysDir;
   private String authenticationJsonFile;
+  private String videoUrlFormat;
   private Map<String, String> devices;
   private UUID objectId;
   private boolean enableMock;
@@ -37,6 +39,7 @@ public class ServiceProperties {
     }
     Preconditions.checkNotNull(devices);
     Preconditions.checkNotNull(objectId);
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat));
   }
 
   public String getBaseDir() {
@@ -61,6 +64,14 @@ public class ServiceProperties {
 
   public void setAuthenticationJsonFile(String authenticationJsonFile) {
     this.authenticationJsonFile = authenticationJsonFile;
+  }
+
+  public String getVideoUrlFormat() {
+    return videoUrlFormat;
+  }
+
+  public void setVideoUrlFormat(String videoUrlFormat) {
+    this.videoUrlFormat = videoUrlFormat;
   }
 
   public Map<String, String> getDevices() {

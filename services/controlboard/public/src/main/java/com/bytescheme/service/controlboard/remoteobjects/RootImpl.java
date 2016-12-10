@@ -102,7 +102,14 @@ public class RootImpl implements Root, RemoteObjectFactory {
     UUID objectId = UUID.fromString(objectIdStr);
     try {
       if (enableMock) {
-        return new MockControlBoardImpl(objectId);
+        return new MockControlBoardImpl(objectId) {
+          private static final long serialVersionUID = 1L;
+
+          @Override
+          public String getVideoUrl() {
+            throw new UnsupportedOperationException();
+          }
+        };
       }
       ControlBoard remoteControlBoard = createRemoteObject(ControlBoard.class, objectId);
       return new DelegateControlBoardImpl(objectId, remoteControlBoard);
