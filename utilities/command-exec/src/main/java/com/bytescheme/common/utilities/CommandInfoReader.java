@@ -19,31 +19,33 @@ import com.google.gson.stream.JsonToken;
  * @author Naorem Khogendro Singh
  *
  */
-public class CommandInfoReader extends AbstractIterator<CommandInfo> implements Closeable {
-	private final JsonReader jsonReader;
-	private final Gson gson = new Gson();
+public class CommandInfoReader extends AbstractIterator<CommandInfo>
+    implements Closeable {
+  private final JsonReader jsonReader;
+  private final Gson gson = new Gson();
 
-	public CommandInfoReader(final InputStream inputStream) throws IOException {
-		Preconditions.checkNotNull(inputStream);
-		this.jsonReader = gson.newJsonReader(new BufferedReader(new InputStreamReader(inputStream)));
-		this.jsonReader.setLenient(true);
-	}
+  public CommandInfoReader(final InputStream inputStream) throws IOException {
+    Preconditions.checkNotNull(inputStream);
+    this.jsonReader = gson
+        .newJsonReader(new BufferedReader(new InputStreamReader(inputStream)));
+    this.jsonReader.setLenient(true);
+  }
 
-	@Override
-	protected CommandInfo computeNext() {
-		try {
-			if (jsonReader.hasNext() && !jsonReader.peek().equals(JsonToken.END_DOCUMENT)) {
-				return gson.fromJson(jsonReader, CommandInfo.class);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		super.endOfData();
-		IOUtils.closeQuietly(jsonReader);
-		return null;
-	}
+  @Override
+  protected CommandInfo computeNext() {
+    try {
+      if (jsonReader.hasNext() && !jsonReader.peek().equals(JsonToken.END_DOCUMENT)) {
+        return gson.fromJson(jsonReader, CommandInfo.class);
+      }
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Failed parsing JSON file", e);
+    }
+    super.endOfData();
+    IOUtils.closeQuietly(jsonReader);
+    return null;
+  }
 
-	public void close() throws IOException {
-		this.jsonReader.close();
-	}
+  public void close() throws IOException {
+    this.jsonReader.close();
+  }
 }

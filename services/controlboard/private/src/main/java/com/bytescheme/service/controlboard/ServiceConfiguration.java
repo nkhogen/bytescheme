@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 
 import com.bytescheme.common.utils.JsonUtils;
 import com.bytescheme.rpc.core.RemoteObjectServer;
@@ -15,9 +16,12 @@ import com.bytescheme.rpc.security.RSAAuthenticationProvider;
 import com.bytescheme.rpc.security.SecurityProvider;
 import com.bytescheme.service.controlboard.common.remoteobjects.MockControlBoardImpl;
 import com.bytescheme.service.controlboard.remoteobjects.TargetControlBoardImpl;
+import com.bytescheme.service.controlboard.video.VideoBroadcastHandler;
+import com.bytescheme.service.controlboard.video.VideoServer;
 
 /**
  * Bean configurations.
+ *
  * @author Naorem Khogendro Singh
  *
  */
@@ -28,7 +32,6 @@ public class ServiceConfiguration {
   private ServiceProperties serviceProperties;
 
   @Bean
-  @Autowired
   public RemoteObjectServer remoteObjectServer() throws Exception {
     Map<String, AuthData> authDataMap = JsonUtils.mapFromJsonFile(
         serviceProperties.getBaseDir() + serviceProperties.getAuthenticationJsonFile(),
@@ -47,5 +50,17 @@ public class ServiceConfiguration {
       server.register(new TargetControlBoardImpl(serviceProperties.getObjectId(), map));
     }
     return server;
+  }
+
+  @Bean
+  public VideoBroadcastHandler broadcaster() {
+    return VideoBroadcastHandler.getInstance();
+  }
+
+  @Bean
+  public ServerEndpointExporter serverEndpointExporter() {
+    ServerEndpointExporter endpointExporter = new ServerEndpointExporter();
+    endpointExporter.setAnnotatedEndpointClasses(VideoServer.class);
+    return endpointExporter;
   }
 }

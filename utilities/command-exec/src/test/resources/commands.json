@@ -1,2 +1,2 @@
-{"script":"ls -al","exitValue":0,"completionWaitTime":1000, "isSync": false, "sleepTime": 2000, "executionTimes":10}
-{"script":"sleep 1","exitValue":0,"completionWaitTime":3000,"executionTimes":1}
+{"script":"ls -al","exitValue":0,"completionWaitTime":1000,"sleepTime": 2000}
+{"script":"sleep 1","exitValue":0,"completionWaitTime":3000}

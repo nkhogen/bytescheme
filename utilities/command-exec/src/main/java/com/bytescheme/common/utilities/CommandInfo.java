@@ -16,9 +16,7 @@ public class CommandInfo implements Serializable {
   private String workingDirectory;
   private Integer exitValue;
   private Long completionWaitTime;
-  private Integer executionTimes;
-  private Long sleepTime;
-  private boolean isSync;
+  private boolean isWait;
 
   public String getScript() {
     return script;
@@ -52,28 +50,12 @@ public class CommandInfo implements Serializable {
     this.completionWaitTime = completionWaitTime;
   }
 
-  public Integer getExecutionTimes() {
-    return executionTimes;
+  public boolean isWait() {
+    return isWait;
   }
 
-  public void setExecutionTimes(Integer executionTimes) {
-    this.executionTimes = executionTimes;
-  }
-
-  public Long getSleepTime() {
-    return sleepTime;
-  }
-
-  public void setSleepTime(Long sleepTime) {
-    this.sleepTime = sleepTime;
-  }
-
-  public boolean isSync() {
-    return isSync;
-  }
-
-  public void setSync(boolean isSync) {
-    this.isSync = isSync;
+  public void setWait(boolean isWait) {
+    this.isWait = isWait;
   }
 
   @Override
