@@ -21,6 +21,7 @@ public class ServiceProperties {
   private String baseDir;
   private String sshKeysDir;
   private String authenticationJsonFile;
+  private String commandFile;
   private String videoUrlFormat;
   private Map<String, String> devices;
   private UUID objectId;
@@ -41,6 +42,8 @@ public class ServiceProperties {
     Preconditions.checkNotNull(objectId, "Invalid object ID");
     Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat),
         "Invalid video URL format");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(commandFile),
+        "Invalid command file");
   }
 
   public String getBaseDir() {
@@ -65,6 +68,14 @@ public class ServiceProperties {
 
   public void setAuthenticationJsonFile(String authenticationJsonFile) {
     this.authenticationJsonFile = authenticationJsonFile;
+  }
+
+  public String getCommandFile() {
+    return commandFile;
+  }
+
+  public void setCommandFile(String commandFile) {
+    this.commandFile = commandFile;
   }
 
   public String getVideoUrlFormat() {

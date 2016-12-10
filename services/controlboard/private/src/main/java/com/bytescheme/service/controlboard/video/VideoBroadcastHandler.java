@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -39,6 +40,7 @@ public class VideoBroadcastHandler {
   private DelayQueue<Secret> secrets = new DelayQueue<>();
   private static volatile VideoBroadcastHandler INSTANCE;
   private static final String STREAM_MAGIC_BYTES = "jsmp";
+  private String commandFile;
   private short width = 320;
   private short height = 240;
   private final CommandExecutor executor = new CommandExecutor();
@@ -69,6 +71,14 @@ public class VideoBroadcastHandler {
       INSTANCE = new VideoBroadcastHandler();
     }
     return INSTANCE;
+  }
+
+  public String getCommandFile() {
+    return commandFile;
+  }
+
+  public void setCommandFile(String commandFile) {
+    this.commandFile = commandFile;
   }
 
   public void registerConnection(String secret, Session session) throws IOException {
@@ -150,18 +160,19 @@ public class VideoBroadcastHandler {
   }
 
   private void start(boolean isWait) {
-    CommandInfoReader reader;
     int processCount = executor.getProcessCount();
     if (processCount > 0) {
       throw new IllegalStateException(
           String.format("Some processes (%d) are already running", processCount));
     }
+    CommandInfoReader reader = null;
     try {
-      reader = new CommandInfoReader(
-          new FileInputStream("src/main/resources/commands.json"));
+      reader = new CommandInfoReader(new FileInputStream(commandFile));
       executor.waitExecute(reader, isWait);
     } catch (Exception e) {
       throw new IllegalArgumentException("Failed to start video streaming", e);
+    } finally {
+      IOUtils.closeQuietly(reader);
     }
   }
 }

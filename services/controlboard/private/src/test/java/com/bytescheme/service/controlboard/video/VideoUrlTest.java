@@ -2,15 +2,13 @@ package com.bytescheme.service.controlboard.video;
 
 import java.util.UUID;
 
-import org.junit.Test;
-
 import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 
 public class VideoUrlTest {
-  @Test
+  //@Test
   public void testGetVideoUrl() throws Exception {
     RemoteObjectClientBuilder clientBuilder = new RemoteObjectClientBuilder(
         "https://localhost:8443/rpc");

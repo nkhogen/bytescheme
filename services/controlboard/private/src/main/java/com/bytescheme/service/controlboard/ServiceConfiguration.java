@@ -40,14 +40,16 @@ public class ServiceConfiguration {
         serviceProperties.getBaseDir() + serviceProperties.getSshKeysDir(), authDataMap);
     SecurityProvider securityProvider = new SecurityProvider(rsaAuthenticationProvider);
     RemoteObjectServer server = new RemoteObjectServer(true, securityProvider);
-    Map<Integer, String> map = new HashMap<>();
-    for (Map.Entry<String, String> entry : serviceProperties.getDevices().entrySet()) {
-      map.put(Integer.parseInt(entry.getKey()), entry.getValue());
-    }
+    VideoBroadcastHandler.getInstance()
+        .setCommandFile(serviceProperties.getCommandFile());
     if (serviceProperties.isEnableMock()) {
       server.register(new TargetMockControlBoardImpl(serviceProperties.getObjectId(),
           serviceProperties.getVideoUrlFormat()));
     } else {
+      Map<Integer, String> map = new HashMap<>();
+      for (Map.Entry<String, String> entry : serviceProperties.getDevices().entrySet()) {
+        map.put(Integer.parseInt(entry.getKey()), entry.getValue());
+      }
       server.register(new TargetControlBoardImpl(serviceProperties.getObjectId(), map,
           serviceProperties.getVideoUrlFormat()));
     }
