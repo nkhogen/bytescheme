@@ -106,7 +106,13 @@ public class VideoBroadcastHandler {
   public void unregisterConnection(Session session) {
     Preconditions.checkNotNull(session, "Invalid websocket session");
     synchronized (sessions) {
-      sessions.inverse().remove(session);
+      String secret = sessions.inverse().remove(session);
+      if (secret != null) {
+        // There could be connection breaks. Reclaim the secret and keep it for
+        // some time.
+        secrets
+            .add(new Secret(secret, System.currentTimeMillis() + UNCLAIMED_SECRET_LIFE));
+      }
       if (sessions.isEmpty()) {
         executor.destroyProcesses();
       }

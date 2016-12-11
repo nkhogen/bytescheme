@@ -1,0 +1,12 @@
+Add something like this to /etc/apt/sources.list (with your preferred mirror):
+
+deb http://ftp.uk.debian.org/debian jessie-backports main
+
+gpg --keyserver pgpkeys.mit.edu --recv-key  010908312D230C5F      
+gpg -a --export 010908312D230C5F | sudo apt-key add -
+
+gpg --keyserver pgpkeys.mit.edu --recv-key  8B48AD6246925553      
+gpg -a --export 8B48AD6246925553 | sudo apt-key add -
+
+apt-get update
+apt-get install ffmpeg

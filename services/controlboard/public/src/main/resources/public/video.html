@@ -36,7 +36,8 @@ body {
 	</canvas>
 	<script type="text/javascript" src="scripts/jsmpg.js"></script>
 	<script type="text/javascript">
-		var client = new WebSocket(getCookie("video").replace(/"/g, ""));
+		var url = getCookie("video").replace(/"/g, "");
+		var client = new WebSocket(url, null, {rejectUnauthorized: false});
 		var canvas = document.getElementById('videoCanvas');
 		var player = new jsmpeg(client, {
 			canvas : canvas
