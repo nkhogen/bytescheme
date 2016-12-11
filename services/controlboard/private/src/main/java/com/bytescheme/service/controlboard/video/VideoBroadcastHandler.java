@@ -112,7 +112,7 @@ public class VideoBroadcastHandler {
         // some time.
         secrets
             .add(new Secret(secret, System.currentTimeMillis() + UNCLAIMED_SECRET_LIFE));
-        LOG.info("Exporing secret soon");
+        LOG.info("Expiring secret soon");
       }
       if (sessions.isEmpty()) {
         executor.destroyProcesses();
