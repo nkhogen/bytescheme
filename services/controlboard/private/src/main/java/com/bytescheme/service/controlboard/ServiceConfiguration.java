@@ -40,8 +40,8 @@ public class ServiceConfiguration {
         serviceProperties.getBaseDir() + serviceProperties.getSshKeysDir(), authDataMap);
     SecurityProvider securityProvider = new SecurityProvider(rsaAuthenticationProvider);
     RemoteObjectServer server = new RemoteObjectServer(true, securityProvider);
-    VideoBroadcastHandler.getInstance()
-        .setCommandFile(serviceProperties.getCommandFile());
+    VideoBroadcastHandler.getInstance().setCommandFile(
+        serviceProperties.getBaseDir() + serviceProperties.getCommandFile());
     if (serviceProperties.isEnableMock()) {
       server.register(new TargetMockControlBoardImpl(serviceProperties.getObjectId(),
           serviceProperties.getVideoUrlFormat()));

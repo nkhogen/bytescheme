@@ -21,9 +21,9 @@ app.controller('auth_ctrl', function($scope, $http) {
 			requestId : guid()
 		});
 		$http(request).then(function(response) {
-			console.log(response.data);
 			$scope.session = response.data.returnValue;
 			if (response.data.exception === null) {
+				console.log("Logged in succesfully");
 				setCookie("session", $scope.session);
 				setCookie("user", profile.getName());
 				setCookie("email", email);
@@ -49,7 +49,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 		var request = createPostRequest(globals.rpc_url, payload);
 		console.log('Calling getControlBoard');
 		$http(request).then(function(response) {
-			console.log('getControlBoard: '+JSON.stringify(response.data.exception ));
+			console.log('getControlBoard: '+JSON.stringify(response.data.exception));
 			console.log('getControlBoard: '+response.data.returnValue);
 			if (response.data.returnValue) {
 				$scope.control_object_id = JSON.parse(response.data.returnValue)["::objId"];
