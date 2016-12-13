@@ -31,7 +31,8 @@ public class GoogleAuthenticationProvider extends FileAuthenticationProvider {
   public GoogleAuthenticationProvider(Map<String, AuthData> authDataMap, String clientId)
       throws IOException, GeneralSecurityException {
     super(authDataMap);
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(clientId), "Invalid Google client ID");
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(clientId),
+        "Invalid Google client ID");
     NetHttpTransport transport = new NetHttpTransport.Builder().doNotValidateCertificate()
         .build();
     verifier = new GoogleIdTokenVerifier.Builder(transport, new GsonFactory())
@@ -62,6 +63,9 @@ public class GoogleAuthenticationProvider extends FileAuthenticationProvider {
     }
     Payload payload = idToken.getPayload();
     String email = payload.getEmail();
+    if (!authentication.getUser().equals(email)) {
+      return null;
+    }
     AuthData authData = authDataMap.get(email);
     return new Authentication(email, authentication.getPassword(),
         authData == null ? null : authData.getRoles());

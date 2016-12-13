@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author Naorem Khogendro Singh
  *
  */
-@ServerEndpoint(value = "/video/{secret}")
+@ServerEndpoint(value = "/video/{secret}", subprotocols = { "stream", "video" })
 public class VideoServer {
   private static final Logger LOG = LoggerFactory.getLogger(VideoServer.class);
 

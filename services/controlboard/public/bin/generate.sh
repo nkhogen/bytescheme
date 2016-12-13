@@ -8,3 +8,12 @@ sudo openssl pkcs12 -export -in /controlboard/conf/security/ssl/bytescheme.cer -
 sudo keytool -importkeystore -srckeystore /controlboard/conf/security/ssl/bytescheme.p12 -srcstoretype PKCS12 -destkeystore /controlboard/conf/security/ssl/keystore.jks -deststoretype JKS
 
 sudo systemctl start controlboard.service
+
+
+or use PKCS12
+
+keytool -genkey -alias jetty -storetype PKCS12 -keyalg RSA -keysize 2048 -keystore keystore.p12 -validity 3650
+server.ssl.key-store: keystore.p12
+server.ssl.key-store-password: mypassword
+server.ssl.keyStoreType: PKCS12
+server.ssl.keyAlias: jetty

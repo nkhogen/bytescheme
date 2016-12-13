@@ -62,23 +62,33 @@ function getGlobals() {
 	return globals;
 };
 
+function extractOrigin(url) {
+	var start = url.indexOf("://");
+	var end = url.indexOf("/", start + 3);
+	return "https" + url.substring(start, end);
+};
+
 function redirectOnLogin() {
 	var globals = getGlobals();
-	var url = "https://accounts.google.com/o/oauth2/v2/auth?scope=email&client_id="+globals.client_id+"&redirect_uri="
-			+ globals.success_redirect + "&response_type=token";
+	var url = "https://accounts.google.com/o/oauth2/v2/auth?scope=email&client_id="
+			+ globals.client_id
+			+ "&redirect_uri="
+			+ globals.success_redirect
+			+ "&response_type=token";
 	window.location.replace(url);
 };
 
 function redirectOnLogout() {
 	var globals = getGlobals();
-	window.location.replace("https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue="
-			+ globals.logout_redirect);
+	window.location
+			.replace("https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue="
+					+ globals.logout_redirect);
 };
 
 function doInScope(appName, callback) {
-    var appElement = document.querySelector('[ng-app='+appName+']');
-    var $scope = angular.element(appElement).scope();
-    $scope.$apply(callback($scope));
+	var appElement = document.querySelector('[ng-app=' + appName + ']');
+	var $scope = angular.element(appElement).scope();
+	$scope.$apply(callback($scope));
 };
 
 function onSignIn(googleUser) {

@@ -123,10 +123,14 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 			var videoUrl = response.data.returnValue;
 			console.log("Response for getVideoUrl: " + videoUrl);
 			if (videoUrl == null) {
+				if (checkException(response.data.exception)) {
+					redirectOnLogout();
+				}
 				return;
 			}
 			setCookie("video", videoUrl);
-			$window.open('video.html', '_blank', 'fullscreen=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no');
+			$window.location.href='video.html';
+			//$window.open('video.html', '_blank', 'fullscreen=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no');
 		});
 	};
 
