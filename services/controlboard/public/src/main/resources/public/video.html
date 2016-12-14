@@ -40,7 +40,7 @@ body {
 		var httpsOrigin = extractOrigin(url);
 		console.log(httpsOrigin);
 		var options = {origin: httpsOrigin, rejectUnauthorized: false};
-		var client = new WebSocket(url, "stream", options);
+		var client = new WebSocket(url, "stream");
 		var canvas = document.getElementById('videoCanvas');
 		var player = new jsmpeg(client, {
 			canvas : canvas

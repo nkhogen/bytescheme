@@ -66,6 +66,20 @@ h1 {
 	margin-left: 20px;
 }
 
+a:link, a:visited {
+    color: blue;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size:30px;
+    margin-left: 20px;
+}
+
+a:hover, a:active {
+    color: red;
+    font-size:30px;
+    margin-left: 20px;
+}
 .device {
 	font-family: Arial;
 	color: blue;
@@ -74,29 +88,30 @@ h1 {
 	margin-left: 30px;
 }
 </style>
-	<script>
-		function onLoad() {
-			gapi.load('auth2', function() {
-				gapi.auth2.init();
-			});
-		}
-	</script>
-	<h1>Hello {{user}}</h1>
-	<button class="button_signout" onclick="signOut()"></button>
-	<table>
-		<tr ng-repeat="v in videos">
-			<td>
-				<button class="play_video" ng-click="startVideo()"></button>
-			</td>
-			<td><span class="device">{{v}}</span></td>
+<script>
+	function onLoad() {
+		gapi.load('auth2', function() {
+			gapi.auth2.init();
+		});
+	}
+</script>
+<a href="https://bytescheme.wordpress.com">Info</a>
+<h1>Hello {{user}}</h1>
+<button class="button_signout" onclick="signOut()"></button>
+<table>
+	<tr ng-repeat="v in videos">
+		<td>
+			<button class="play_video" ng-click="startVideo()"></button>
+		</td>
+		<td><span class="device">{{v}}</span></td>
+	</tr>
+	<tr ng-repeat="d in devices">
+		<td>
+			<button class={{d.button_css_class}} ng-click="clickHandler(d)">
+			</button>
+		</td>
+		<td><span class="device">{{d.tag}}</span></td>
 		</tr>
-		<tr ng-repeat="d in devices">
-			<td>
-				<button class={{d.button_css_class}} ng-click="clickHandler(d)">
-				</button>
-			</td>
-			<td><span class="device">{{d.tag}}</span></td>
-		</tr>
-	</table>
+</table>
 </body>
 </html>
