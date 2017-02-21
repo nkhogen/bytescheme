@@ -9,6 +9,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -41,6 +44,7 @@ import com.github.axet.vget.vhs.YouTubeInfo.StreamVideo;
 import com.github.axet.vget.vhs.YouTubeParser;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 /**
  * This handles all the downloads.
@@ -86,8 +90,9 @@ public final class DownloadUtils {
    */
   public static long downloadPlaylist(Path outputDirectory, Path commandFile,
       String playlistId, DownloadType downloadType) {
-    return processPlaylist(playlistId, videoDownload -> downloadVideo(outputDirectory,
-        commandFile, videoDownload, downloadType));
+    return processPlaylist(outputDirectory, playlistId,
+        videoDownload -> downloadVideo(outputDirectory, commandFile, videoDownload,
+            downloadType));
 
   }
 
@@ -124,25 +129,9 @@ public final class DownloadUtils {
       if (!rawOutput.exists()) {
         rawOutput.mkdirs();
       }
-      Path idsOutputPath = outputDirectory.resolve(IDS_FOLDER);
-      File idsOutputFile = idsOutputPath.toFile();
-      if (!idsOutputFile.exists()) {
-        idsOutputFile.mkdirs();
-      }
-      if (isAlreadyDownloaded(idsOutputPath, videoResource)) {
-        LOG.info("Already downloaded {}", videoResource);
-        return false;
-      }
       VGet vGet = new VGet(new URL(url), rawOutput);
       VideoInfo videoInfo = vGet.getVideo();
       vGet.download(parser, new AtomicBoolean(false), new DownloadProgress(videoInfo));
-      try (OutputStream outputStream = new FileOutputStream(
-          idsOutputPath.resolve(videoResource.getVideoId()).toFile())) {
-        outputStream.write(videoResource.toString().getBytes());
-      } catch (Exception e) {
-        LOG.error(String.format("Error saving video %s ", videoResource), e);
-        throw e;
-      }
       return postProcessMediaFiles(outputDirectory, commandFile);
     } catch (Exception e) {
       LOG.error(String.format("Error downloading video %s", url), e);
@@ -151,14 +140,20 @@ public final class DownloadUtils {
   }
 
   @SuppressWarnings("unchecked")
-  private static long processPlaylist(String playlistId,
+  private static long processPlaylist(Path outputDirectory, String playlistId,
       Function<VideoResource, Boolean> callback) {
+    Preconditions.checkNotNull(outputDirectory, "Invalid output directory");
     Preconditions.checkArgument(!Strings.isNullOrEmpty(playlistId),
         "Invalid playlist ID");
     Preconditions.checkNotNull(callback, "Invalid callback");
     long totalProcessed = 0L;
     CloseableHttpClient httpClient = null;
     try {
+      Path idsOutputPath = outputDirectory.resolve(IDS_FOLDER);
+      File idsOutputFile = idsOutputPath.toFile();
+      if (!idsOutputFile.exists()) {
+        idsOutputFile.mkdirs();
+      }
       SSLContext sslContext = new SSLContextBuilder()
           .loadTrustMaterial(null, (certificate, authType) -> true).build();
       httpClient = HttpClients.custom().setSSLContext(sslContext)
@@ -185,19 +180,31 @@ public final class DownloadUtils {
               JsonUtils.MAP_TYPE);
           nextPageToken = (String) map.get("nextPageToken");
           Collection<Object> items = (Collection<Object>) map.get("items");
-          totalProcessed += items.stream().map(item -> {
-            Map<String, Object> itemProperties = (Map<String, Object>) item;
-            return itemProperties.get("snippet");
-          }).map(snippet -> {
-            Map<String, Object> snippetProperties = (Map<String, Object>) snippet;
-            Map<String, Object> resourceId = (Map<String, Object>) snippetProperties
-                .get("resourceId");
-            VideoResource videoResource = new VideoResource();
-            videoResource.setKind((String) resourceId.get("kind"));
-            videoResource.setVideoId((String) resourceId.get("videoId"));
-            videoResource.setTitle((String) snippetProperties.get("title"));
-            return callback.apply(videoResource);
-          }).filter(success -> success).count();
+          totalProcessed += filterVideoResources(idsOutputPath,
+              (items.stream().map(item -> {
+                Map<String, Object> itemProperties = (Map<String, Object>) item;
+                return itemProperties.get("snippet");
+              }).map(snippet -> {
+                Map<String, Object> snippetProperties = (Map<String, Object>) snippet;
+                Map<String, Object> resourceId = (Map<String, Object>) snippetProperties
+                    .get("resourceId");
+                VideoResource videoResource = new VideoResource();
+                videoResource.setKind((String) resourceId.get("kind"));
+                videoResource.setVideoId((String) resourceId.get("videoId"));
+                videoResource.setTitle((String) snippetProperties.get("title"));
+                return videoResource;
+              }).collect(Collectors.toList()))).stream().map(videoResource -> {
+                if (callback.apply(videoResource)) {
+                  try (OutputStream outputStream = new FileOutputStream(
+                      idsOutputPath.resolve(videoResource.getVideoId()).toFile())) {
+                    outputStream.write(videoResource.toString().getBytes());
+                    return true;
+                  } catch (Exception e) {
+                    LOG.error(String.format("Error saving ID %s ", videoResource), e);
+                  }
+                }
+                return false;
+              }).filter(success -> success).count();
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -206,6 +213,37 @@ public final class DownloadUtils {
       throw new RuntimeException(e);
     }
     return totalProcessed;
+  }
+
+  private static List<VideoResource> filterVideoResources(Path idsOutputPath,
+      List<VideoResource> videoResources) {
+    if (CollectionUtils.isEmpty(videoResources)) {
+      return Collections.emptyList();
+    }
+    List<VideoResource> newVideoResources = Lists.newArrayList(videoResources);
+    File idsOutputFile = idsOutputPath.toFile();
+    if (!idsOutputFile.exists()) {
+      return newVideoResources;
+    }
+    try {
+      Files.walk(idsOutputPath).forEach(path -> {
+        Path fileName = path.getFileName();
+        LOG.debug("Filename {}", fileName);
+        if (fileName != null) {
+          Iterator<VideoResource> videoResourceIter = newVideoResources.iterator();
+          while (videoResourceIter.hasNext()) {
+            VideoResource videoResource = videoResourceIter.next();
+            if (fileName.toString().equals(videoResource.getVideoId())) {
+              LOG.info("Already downloaded {}", videoResource);
+              videoResourceIter.remove();
+            }
+          }
+        }
+      });
+      return newVideoResources;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static List<YouTubeParser.VideoDownload> filterStreamCombined(
@@ -219,26 +257,6 @@ public final class DownloadUtils {
       }
       return videoDownload.stream instanceof StreamVideo;
     }).collect(Collectors.toList());
-  }
-
-  private static boolean isAlreadyDownloaded(Path idsOutputPath,
-      VideoResource videoResource) {
-    File idsOutputFile = idsOutputPath.toFile();
-    if (!idsOutputFile.exists()) {
-      return false;
-    }
-    try {
-      return Files.walk(idsOutputPath).anyMatch(path -> {
-        Path fileName = path.getFileName();
-        LOG.debug("Filename {}", fileName);
-        if (fileName == null) {
-          return false;
-        }
-        return fileName.toString().equals(videoResource.getVideoId());
-      });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private static boolean postProcessMediaFiles(Path inputDirectory, Path commandFile) {
