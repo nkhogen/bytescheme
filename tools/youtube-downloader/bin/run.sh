@@ -1,0 +1,2 @@
+#!/bin/bash
+java -XX:MaxJavaStackTraceDepth=10 -jar /youtube-downloader/libs/bytescheme-youtube-downloader-0.0.1-SNAPSHOT.jar --spring.config.location=/youtube-downloader/conf/application.properties  > /youtube-downloader/logs/console.log 2>&1

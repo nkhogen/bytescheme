@@ -17,6 +17,7 @@ public class CommandInfo implements Serializable {
   private Integer exitValue;
   private Long completionWaitTime;
   private boolean isWait;
+  private boolean invokeShell;
 
   public String getScript() {
     return script;
@@ -56,6 +57,14 @@ public class CommandInfo implements Serializable {
 
   public void setWait(boolean isWait) {
     this.isWait = isWait;
+  }
+
+  public boolean isInvokeShell() {
+    return invokeShell;
+  }
+
+  public void setInvokeShell(boolean invokeShell) {
+    this.invokeShell = invokeShell;
   }
 
   @Override

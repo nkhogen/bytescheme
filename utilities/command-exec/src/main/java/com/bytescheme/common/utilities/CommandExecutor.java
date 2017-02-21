@@ -12,11 +12,13 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.bytescheme.common.utils.JsonUtils;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 
 /**
  *
@@ -29,8 +31,16 @@ public class CommandExecutor {
 
   private CommandExecuteHandler execute(CommandInfo commandInfo)
       throws ExecuteException, IOException, InterruptedException {
-    Preconditions.checkNotNull(commandInfo);
-    CommandLine commandLine = CommandLine.parse(commandInfo.getScript());
+    Preconditions.checkNotNull(commandInfo, "Invalid command info");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(commandInfo.getScript()),
+        "Invalid script");
+    CommandLine commandLine = null;
+    if (commandInfo.isInvokeShell()) {
+      commandLine = new CommandLine("/bin/sh");
+      commandLine.addArguments(new String[] { "-c", commandInfo.getScript() }, false);
+    } else {
+      commandLine = CommandLine.parse(commandInfo.getScript());
+    }
     final CommandExecuteHandler resultHandler = new CommandExecuteHandler(commandInfo);
     DefaultExecutor executor = new DefaultExecutor() {
       @Override
@@ -49,13 +59,13 @@ public class CommandExecutor {
       executor.setWatchdog(watchdog);
     }
     executor.setWorkingDirectory(new File(commandInfo.getWorkingDirectory()));
-    executor.execute(commandLine, resultHandler);
+    executor.execute(commandLine, EnvironmentUtils.getProcEnvironment(), resultHandler);
     return resultHandler;
   }
 
   public void waitExecute(Iterator<CommandInfo> commandInfoIterator, boolean isWait) {
     Preconditions.checkNotNull(commandInfoIterator);
-    List<CommandExecuteHandler> resultHandlers = new LinkedList<CommandExecuteHandler>();
+    List<CommandExecuteHandler> resultHandlers = new LinkedList<>();
     while (commandInfoIterator.hasNext()) {
       CommandInfo commandInfo = commandInfoIterator.next();
       setDefaults(commandInfo);
