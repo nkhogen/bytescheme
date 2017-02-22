@@ -21,6 +21,7 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -36,6 +37,7 @@ import com.bytescheme.common.utilities.CommandExecutor;
 import com.bytescheme.common.utilities.CommandInfoReader;
 import com.bytescheme.common.utils.JsonUtils;
 import com.github.axet.vget.VGet;
+import com.github.axet.vget.info.VideoFileInfo;
 import com.github.axet.vget.info.VideoInfo;
 import com.github.axet.vget.vhs.YouTubeInfo;
 import com.github.axet.vget.vhs.YouTubeInfo.StreamAudio;
@@ -55,15 +57,15 @@ import com.google.common.collect.Lists;
 public final class DownloadUtils {
   private static Logger LOG = LoggerFactory.getLogger(DownloadUtils.class);
 
-  private static String PLAYLIST_URL_TEMPLATE = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=10&playlistId=%s&key=AIzaSyAOPiX0V9T2Xve0sZB2ZbWn0vjP7NFh3r8";
+  public static String PLAYLIST_URL_TEMPLATE = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=10&playlistId=%s&key=AIzaSyAOPiX0V9T2Xve0sZB2ZbWn0vjP7NFh3r8";
 
-  private static String VIDEO_URL_TEMPLATE = "https://www.youtube.com/watch?v=%s";
+  public static String VIDEO_URL_TEMPLATE = "https://www.youtube.com/watch?v=%s";
 
-  private static String RAW_OUTPUT_FOLDER = "raw";
+  public static String RAW_OUTPUT_FOLDER = "raw";
 
-  private static String FINAL_OUTPUT_FOLDER = "final";
+  public static String FINAL_OUTPUT_FOLDER = "final";
 
-  private static String IDS_FOLDER = "ids";
+  public static String IDS_FOLDER = "ids";
 
   /**
    * Type of download.
@@ -132,6 +134,13 @@ public final class DownloadUtils {
       VGet vGet = new VGet(new URL(url), rawOutput);
       VideoInfo videoInfo = vGet.getVideo();
       vGet.download(parser, new AtomicBoolean(false), new DownloadProgress(videoInfo));
+      for (VideoFileInfo videoFileInfo : videoInfo.getInfo()) {
+        File file = videoFileInfo.getTarget();
+        if (file != null && file.exists()) {
+          videoResource.setTitle(FilenameUtils.removeExtension(file.getName()));
+          break;
+        }
+      }
       return postProcessMediaFiles(outputDirectory, commandFile);
     } catch (Exception e) {
       LOG.error(String.format("Error downloading video %s", url), e);
@@ -229,7 +238,7 @@ public final class DownloadUtils {
       Files.walk(idsOutputPath).forEach(path -> {
         Path fileName = path.getFileName();
         LOG.debug("Filename {}", fileName);
-        if (fileName != null) {
+        if (fileName != null && !path.toFile().isDirectory()) {
           Iterator<VideoResource> videoResourceIter = newVideoResources.iterator();
           while (videoResourceIter.hasNext()) {
             VideoResource videoResource = videoResourceIter.next();

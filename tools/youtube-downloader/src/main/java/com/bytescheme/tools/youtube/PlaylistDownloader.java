@@ -16,6 +16,7 @@ import org.springframework.validation.Validator;
 
 /**
  * Entry class for playlist downloader.
+ *
  * @author Naorem Khogendro Singh
  *
  */
@@ -57,5 +58,6 @@ public class PlaylistDownloader implements ApplicationRunner {
         LOG.error(String.format("Failed to download playlist %s", playlist), e);
       }
     });
+    OrphanRemover.exportOrphanIds(configProperties.getOutputDirectory());
   }
 }
