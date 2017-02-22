@@ -159,10 +159,6 @@ public final class DownloadUtils {
     CloseableHttpClient httpClient = null;
     try {
       Path idsOutputPath = outputDirectory.resolve(IDS_FOLDER);
-      File idsOutputFile = idsOutputPath.toFile();
-      if (!idsOutputFile.exists()) {
-        idsOutputFile.mkdirs();
-      }
       SSLContext sslContext = new SSLContextBuilder()
           .loadTrustMaterial(null, (certificate, authType) -> true).build();
       httpClient = HttpClients.custom().setSSLContext(sslContext)
@@ -204,13 +200,8 @@ public final class DownloadUtils {
                 return videoResource;
               }).collect(Collectors.toList()))).stream().map(videoResource -> {
                 if (callback.apply(videoResource)) {
-                  try (OutputStream outputStream = new FileOutputStream(
-                      idsOutputPath.resolve(videoResource.getVideoId()).toFile())) {
-                    outputStream.write(videoResource.toString().getBytes());
-                    return true;
-                  } catch (Exception e) {
-                    LOG.error(String.format("Error saving ID %s ", videoResource), e);
-                  }
+                  saveVideoId(idsOutputPath, videoResource);
+                  return true;
                 }
                 return false;
               }).filter(success -> success).count();
@@ -222,6 +213,19 @@ public final class DownloadUtils {
       throw new RuntimeException(e);
     }
     return totalProcessed;
+  }
+
+  private static void saveVideoId(Path idsOutputPath, VideoResource videoResource) {
+    File idsOutputFile = idsOutputPath.toFile();
+    if (!idsOutputFile.exists()) {
+      idsOutputFile.mkdirs();
+    }
+    try (OutputStream outputStream = new FileOutputStream(
+        idsOutputPath.resolve(videoResource.getVideoId()).toFile())) {
+      outputStream.write(videoResource.toString().getBytes());
+    } catch (Exception e) {
+      LOG.error(String.format("Error saving ID %s ", videoResource), e);
+    }
   }
 
   private static List<VideoResource> filterVideoResources(Path idsOutputPath,
