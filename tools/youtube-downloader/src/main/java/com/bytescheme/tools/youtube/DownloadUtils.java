@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +24,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -67,6 +70,10 @@ public final class DownloadUtils {
 
   public static String IDS_FOLDER = "ids";
 
+  public static final String ORPHAN_IDS = "orphanIds.sh";
+
+  public static final String DELETE_ID_LINE = "rm -rf %s";
+
   /**
    * Type of download.
    *
@@ -93,27 +100,35 @@ public final class DownloadUtils {
   public static long downloadPlaylist(Path outputDirectory, Path commandFile,
       String playlistId, DownloadType downloadType) {
     return processPlaylist(outputDirectory, playlistId,
-        videoDownload -> downloadVideo(outputDirectory, commandFile, videoDownload,
+        videoResource -> downloadVideo(outputDirectory, commandFile, videoResource,
             downloadType));
 
   }
 
   /**
-   * Download a single file.
+   * Downloads a video by ID.
    *
    * @param outputDirectory
    * @param commandFile
-   * @param videoResource
+   * @param videoId
    * @param downloadType
    * @return
    */
   public static boolean downloadVideo(Path outputDirectory, Path commandFile,
-      VideoResource videoResource, DownloadType downloadType) {
+      String videoId, DownloadType downloadType) {
     Preconditions.checkNotNull(outputDirectory, "Invalid output directory");
-    Preconditions.checkNotNull(videoResource, "Invalid video resource");
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(videoId), "Invalid video Id");
     Preconditions.checkNotNull(downloadType, "Invalid download type");
+    VideoResource videoResource = new VideoResource();
+    videoResource.setVideoId(videoId);
+    return downloadVideo(outputDirectory, commandFile, videoResource, downloadType);
+  }
+
+  private static boolean downloadVideo(Path outputDirectory, Path commandFile,
+      VideoResource videoResource, DownloadType downloadType) {
     String url = String.format(VIDEO_URL_TEMPLATE, videoResource.getVideoId());
-    LOG.info("Downloading video {}", url);
+    LOG.info("Download video {}", url);
+    LOG.info("Resource {}", videoResource);
     YouTubeParser parser = new YouTubeParser() {
       @Override
       public List<YouTubeParser.VideoDownload> extractLinks(YouTubeInfo info) {
@@ -127,6 +142,7 @@ public final class DownloadUtils {
       }
     };
     try {
+      Path idsOutputPath = outputDirectory.resolve(IDS_FOLDER);
       File rawOutput = outputDirectory.resolve(RAW_OUTPUT_FOLDER).toFile();
       if (!rawOutput.exists()) {
         rawOutput.mkdirs();
@@ -141,10 +157,76 @@ public final class DownloadUtils {
           break;
         }
       }
+      saveVideoId(idsOutputPath, videoResource);
       return postProcessMediaFiles(outputDirectory, commandFile);
     } catch (Exception e) {
       LOG.error(String.format("Error downloading video %s", url), e);
       return false;
+    }
+  }
+
+  /**
+   * Generate orphan IDs
+   *
+   * @param outputDirectory
+   */
+  public static void exportOrphanIds(Path outputDirectory) {
+    Preconditions.checkNotNull(outputDirectory, "Invalid output directory");
+    try (OutputStream outputStream = new FileOutputStream(
+        outputDirectory.resolve(ORPHAN_IDS).toFile())) {
+      exportOrphanIds(outputDirectory, outputStream);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Unable to open directory %s", outputDirectory), e);
+    }
+  }
+
+  /**
+   * Generate orphan IDs
+   *
+   * @param outputDirectory
+   */
+  public static void exportOrphanIds(Path outputDirectory, OutputStream outputStream) {
+    Preconditions.checkNotNull(outputDirectory, "Invalid output directory");
+    Preconditions.checkNotNull(outputStream, "Invalid output stream");
+    PrintWriter writer = null;
+    try {
+      final PrintWriter printWriter = (writer = new PrintWriter(
+          new OutputStreamWriter(outputStream, "UTF-8")));
+      Path idsPath = outputDirectory.resolve(IDS_FOLDER);
+      Path finalPath = outputDirectory.resolve(FINAL_OUTPUT_FOLDER);
+      Files.walk(idsPath).map(path -> {
+        if (path.toFile().isDirectory()) {
+          return false;
+        }
+        VideoResource videoResource = JsonUtils.fromJsonFile(path.toString(),
+            VideoResource.class);
+        if (videoResource == null) {
+          return false;
+        }
+        try {
+          boolean isFound = Files.walk(finalPath).anyMatch(mediaPath -> {
+            Path fileName = mediaPath.getFileName();
+            if (fileName == null || mediaPath.toFile().isDirectory()) {
+              return false;
+            }
+            return FilenameUtils.removeExtension(fileName.toString())
+                .equals(videoResource.getTitle());
+          });
+          if (!isFound) {
+            LOG.info("Adding ID {} for video {}", videoResource.getVideoId(), path);
+            printWriter.println(String.format(DELETE_ID_LINE, path));
+          }
+        } catch (IOException e) {
+          throw new RuntimeException(
+              String.format("Failed to read the path %s", finalPath), e);
+        }
+        return true;
+      }).filter(success -> success).count();
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to export orphaned IDs", e);
+    } finally {
+      IOUtils.closeQuietly(writer);
     }
   }
 
@@ -198,13 +280,9 @@ public final class DownloadUtils {
                 videoResource.setVideoId((String) resourceId.get("videoId"));
                 videoResource.setTitle((String) snippetProperties.get("title"));
                 return videoResource;
-              }).collect(Collectors.toList()))).stream().map(videoResource -> {
-                if (callback.apply(videoResource)) {
-                  saveVideoId(idsOutputPath, videoResource);
-                  return true;
-                }
-                return false;
-              }).filter(success -> success).count();
+              }).collect(Collectors.toList()))).stream()
+                  .map(videoResource -> callback.apply(videoResource))
+                  .filter(success -> success).count();
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -241,7 +319,7 @@ public final class DownloadUtils {
     try {
       Files.walk(idsOutputPath).forEach(path -> {
         Path fileName = path.getFileName();
-        LOG.debug("Filename {}", fileName);
+        LOG.info("Filename {}", fileName);
         if (fileName != null && !path.toFile().isDirectory()) {
           Iterator<VideoResource> videoResourceIter = newVideoResources.iterator();
           while (videoResourceIter.hasNext()) {
@@ -249,6 +327,7 @@ public final class DownloadUtils {
             if (fileName.toString().equals(videoResource.getVideoId())) {
               LOG.info("Already downloaded {}", videoResource);
               videoResourceIter.remove();
+              break;
             }
           }
         }

@@ -20,6 +20,7 @@ public class ConfigProperties {
   private Path commandFile;
   private Path outputDirectory;
   private Set<String> playlists;
+  private Set<String> videoIds;
 
   public Path getCommandFile() {
     return commandFile;
@@ -47,5 +48,13 @@ public class ConfigProperties {
 
   public void setPlaylists(Set<String> playlists) {
     this.playlists = playlists;
+  }
+
+  public Set<String> getVideoIds() {
+    return videoIds;
+  }
+
+  public void setVideoIds(Set<String> videoIds) {
+    this.videoIds = videoIds;
   }
 }
