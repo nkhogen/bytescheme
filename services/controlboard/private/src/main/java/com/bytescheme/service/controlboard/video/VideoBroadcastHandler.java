@@ -14,7 +14,6 @@ import java.util.concurrent.Executors;
 import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -172,14 +171,11 @@ public class VideoBroadcastHandler {
       throw new IllegalStateException(
           String.format("Some processes (%d) are already running", processCount));
     }
-    CommandInfoReader reader = null;
-    try {
-      reader = new CommandInfoReader(new FileInputStream(commandFile));
+    try (CommandInfoReader reader = new CommandInfoReader(
+        new FileInputStream(commandFile))) {
       executor.waitExecute(reader, isWait);
     } catch (Exception e) {
       throw new IllegalArgumentException("Failed to start video streaming", e);
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
   }
 }

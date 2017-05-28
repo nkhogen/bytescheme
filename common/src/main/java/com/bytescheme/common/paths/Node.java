@@ -3,7 +3,6 @@ package com.bytescheme.common.paths;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 
 import com.google.common.base.Preconditions;

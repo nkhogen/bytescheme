@@ -9,7 +9,8 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 
 /**
- * 
+ * Environment specific properties reader.
+ *
  * @author Naorem Khogendro Singh
  *
  */

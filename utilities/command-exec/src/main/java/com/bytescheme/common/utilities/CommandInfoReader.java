@@ -1,7 +1,6 @@
 package com.bytescheme.common.utilities;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,7 +20,7 @@ import com.google.gson.stream.JsonToken;
  *
  */
 public class CommandInfoReader extends AbstractIterator<CommandInfo>
-    implements Closeable {
+    implements AutoCloseable {
   private final JsonReader jsonReader;
   private final Gson gson = new Gson();
   private final Function<CommandInfo, CommandInfo> callback;
