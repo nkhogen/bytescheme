@@ -1,7 +1,9 @@
 package com.bytescheme.common.utils;
 
-import java.io.ByteArrayOutputStream;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -17,6 +19,12 @@ import java.util.Base64.Encoder;
 
 import javax.crypto.Cipher;
 
+import com.amazonaws.services.kms.AWSKMS;
+import com.amazonaws.services.kms.AWSKMSClientBuilder;
+import com.amazonaws.services.kms.model.DecryptRequest;
+import com.amazonaws.services.kms.model.DecryptResult;
+import com.amazonaws.services.kms.model.EncryptRequest;
+import com.amazonaws.services.kms.model.EncryptResult;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
@@ -28,9 +36,14 @@ import com.google.common.base.Strings;
  *
  */
 public class CryptoUtils {
+
+  public static String KEY_ALIAS_ARN = "arn:aws:kms:us-west-1:284641886907:alias/password-secret";
+
+  public static final Encoder ENCODER = Base64.getEncoder();
+
+  public static final Decoder DECODER = Base64.getDecoder();
+
   private static final String ALGORITHM = "RSA";
-  private static final Encoder ENCODER = Base64.getEncoder();
-  private static final Decoder DECODER = Base64.getDecoder();
 
   private CryptoUtils() {
 
@@ -42,9 +55,7 @@ public class CryptoUtils {
     try {
       byte[] keyBytes = Files.readAllBytes(new File(keyFile).toPath());
       keyBytes = new String(keyBytes, "UTF-8").trim().getBytes();
-      X509EncodedKeySpec spec = new X509EncodedKeySpec(DECODER.decode(keyBytes));
-      KeyFactory keyFactory = KeyFactory.getInstance(ALGORITHM);
-      return keyFactory.generatePublic(spec);
+      return getPublicKey(keyBytes);
     } catch (Exception e) {
       throw new IllegalArgumentException("Failed to get public key", e);
     }
@@ -56,11 +67,31 @@ public class CryptoUtils {
     try {
       byte[] keyBytes = Files.readAllBytes(new File(keyFile).toPath());
       keyBytes = new String(keyBytes, "UTF-8").trim().getBytes();
+      return getPrivateKey(keyBytes);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Failed to get private key", e);
+    }
+  }
+
+  public static PublicKey getPublicKey(byte[] keyBytes) {
+    Preconditions.checkNotNull(keyBytes, "Invalid public key");
+    try {
+      X509EncodedKeySpec spec = new X509EncodedKeySpec(DECODER.decode(keyBytes));
+      KeyFactory keyFactory = KeyFactory.getInstance(ALGORITHM);
+      return keyFactory.generatePublic(spec);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Failed to get public key", e);
+    }
+  }
+
+  public static PrivateKey getPrivateKey(byte[] keyBytes) {
+    Preconditions.checkNotNull(keyBytes, "Invalid private key");
+    try {
       PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(DECODER.decode(keyBytes));
       KeyFactory kf = KeyFactory.getInstance(ALGORITHM);
       return kf.generatePrivate(spec);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Failed to get p key", e);
+      throw new IllegalArgumentException("Failed to get private key", e);
     }
   }
 
@@ -94,18 +125,54 @@ public class CryptoUtils {
 
   public static String[] createKeyPair() {
     try {
-      KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+      KeyPairGenerator gen = KeyPairGenerator.getInstance(ALGORITHM);
       KeyPair pair = gen.generateKeyPair();
-      ByteArrayOutputStream streamPvt = new ByteArrayOutputStream();
-      streamPvt.write(pair.getPrivate().getEncoded());
-      ByteArrayOutputStream streamPub = new ByteArrayOutputStream();
-      streamPub.write(pair.getPublic().getEncoded());
       String[] keys = new String[2];
-      keys[0] = ENCODER.encodeToString(streamPvt.toByteArray());
-      keys[1] = ENCODER.encodeToString(streamPub.toByteArray());
+      keys[0] = ENCODER.encodeToString(pair.getPrivate().getEncoded());
+      keys[1] = ENCODER.encodeToString(pair.getPublic().getEncoded());
       return keys;
     } catch (Exception e) {
       throw new IllegalArgumentException("Failed to generate RSA key pair", e);
     }
+  }
+
+  public static String kmsEncrypt(String plaintext) {
+    checkNotNull(plaintext);
+    AWSKMS kmsClient = AWSKMSClientBuilder
+        .standard()
+        .withCredentials(Environment.DEFAULT.getAwsCredentialsProvider())
+        .build();
+    EncryptRequest request = new EncryptRequest();
+    request.setKeyId(KEY_ALIAS_ARN);
+    ByteBuffer byteBuffer = ByteBuffer.wrap(plaintext.getBytes());
+    request.setPlaintext(byteBuffer);
+    EncryptResult result = kmsClient.encrypt(request);
+    ByteBuffer cipherBlob = result.getCiphertextBlob().asReadOnlyBuffer();
+    byte[] bytes = new byte[cipherBlob.remaining()];
+    cipherBlob.get(bytes);
+    return ENCODER.encodeToString(bytes);
+  }
+
+  public static String kmsDecrypt(String cipher) {
+    checkNotNull(cipher);
+    AWSKMS kmsClient = AWSKMSClientBuilder
+        .standard()
+        .withCredentials(Environment.DEFAULT.getAwsCredentialsProvider())
+        .build();
+    DecryptRequest request = new DecryptRequest();
+    ByteBuffer byteBuffer = ByteBuffer.wrap(DECODER.decode(cipher));
+    request.setCiphertextBlob(byteBuffer);
+    DecryptResult result = kmsClient.decrypt(request);
+    ByteBuffer plaintext = result.getPlaintext().asReadOnlyBuffer();
+    byte[] bytes = new byte[plaintext.remaining()];
+    plaintext.get(bytes);
+    return new String(bytes);
+  }
+
+  public static void main(String[] args) {
+    String[] keys = createKeyPair();
+    String cipher = encrypt("Hello", getPublicKey(keys[1].getBytes()));
+    System.out.println(cipher);
+    System.out.println(decrypt(cipher, getPrivateKey(keys[0].getBytes())));
   }
 }
