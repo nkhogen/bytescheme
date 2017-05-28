@@ -13,6 +13,4 @@ public interface PropertyChangePublisher<V> {
   void unregisterListener(PropertyChangeListener<V> listener);
 
   Map<String, V> getCurrentProperties();
-
-  void shutdown();
 }

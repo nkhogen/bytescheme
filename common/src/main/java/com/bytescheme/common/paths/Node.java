@@ -3,6 +3,11 @@ package com.bytescheme.common.paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+
+import com.google.common.base.Preconditions;
+
 /**
  * N-ary trees representation with multiple root nodes/keys.
  *
@@ -23,13 +28,15 @@ public class Node<T> {
     return data;
   }
 
-  public static <T> Node<T> withMap(Map<String, Node<T>> map, Class<T> clazz) {
+  public static <T> Node<T> withMap(Map<String, Node<T>> map) {
+    Preconditions.checkArgument(MapUtils.isNotEmpty(map));
     Node<T> data = new Node<T>();
     data.map = map;
     return data;
   }
 
   public static <T> Node<T> withValue(T value) {
+    Preconditions.checkNotNull(value);
     Node<T> data = new Node<T>();
     data.value = value;
     return data;

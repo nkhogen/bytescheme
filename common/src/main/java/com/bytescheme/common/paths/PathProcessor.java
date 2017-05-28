@@ -34,8 +34,7 @@ public class PathProcessor implements PropertyChangeListener<Object> {
       if (input instanceof String) {
         return Node.withValue((String) input);
       } else if (input instanceof Map) {
-        return Node.withMap(Maps.transformValues((Map<String, Object>) input, this),
-            String.class);
+        return Node.withMap(Maps.transformValues((Map<String, Object>) input, this));
       }
       throw new IllegalArgumentException("Unknown type " + input.getClass());
     }
@@ -67,7 +66,7 @@ public class PathProcessor implements PropertyChangeListener<Object> {
   private void transformAndSetData(Map<String, Object> map) {
     Preconditions.checkArgument(MapUtils.isNotEmpty(map), "Invalid authorization data");
     dataRef.set(
-        Node.withMap(Maps.transformValues(map, new NodeTransformer()), String.class));
+        Node.withMap(Maps.transformValues(map, new NodeTransformer())));
   }
 
   private void process(int startIndex, String path, Set<String> values,
