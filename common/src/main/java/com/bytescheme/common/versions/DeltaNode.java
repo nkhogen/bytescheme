@@ -45,4 +45,12 @@ public class DeltaNode {
   public Map<String, DeltaNode> getChildNodes() {
     return childNodes;
   }
+
+  public boolean isDeleted() {
+    return data == null && childNodes == null;
+  }
+
+  public boolean isTerminal() {
+    return childNodes == null;
+  }
 }

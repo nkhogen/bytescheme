@@ -54,6 +54,37 @@ public class VersionProcessor {
     return new SimpleEntry<Long, DeltaNode>(versionNode.getVersionId(), deltaNode);
   }
 
+  /**
+   * Merges the current data with the delta changes.
+   *
+   * @param currentData
+   * @param deltaNode
+   * @return
+   */
+  @SuppressWarnings("unchecked")
+  public Object merge(Object currentData, DeltaNode deltaNode) {
+    if (deltaNode == null) {
+      return currentData;
+    }
+    if (deltaNode.isTerminal()) {
+      return deltaNode.isDeleted() ? null : deltaNode.getData();
+    }
+    if (!(currentData instanceof Map)) {
+      return deltaNode.getData();
+    }
+    Map<String, Object> map = Maps.newHashMap((Map<String, Object>) currentData);
+    Map<String, DeltaNode> childNodes = deltaNode.getChildNodes();
+    for (Map.Entry<String, DeltaNode> entry : childNodes.entrySet()) {
+      Object childData = merge(map.get(entry.getKey()), entry.getValue());
+      if (childData == null) {
+        map.remove(entry.getKey());
+      } else {
+        map.put(entry.getKey(), childData);
+      }
+    }
+    return map;
+  }
+
   private DeltaNode getLatest(VersionNode versionNode, long versionId) {
     DeltaNode deltaNode = null;
     if (versionNode != null && versionNode.getVersionId() > versionId) {
@@ -185,15 +216,21 @@ public class VersionProcessor {
     oldVersion = entry.getKey();
     System.out.println(gson.toJson(entry.getValue()));
     System.out.println(gson.toJson(processor.rootVersionNodeRef.get()));
-    map1.put("key2", 1);
-    map2.put("key3", 3);
-    map1.put("key4", map2);
-    map.put("i1", map1);
-    map.remove("i2");
-    map.put("i3", "hello3");
-    processor.process(map);
+    Map<String, Object> mapp = Maps.newHashMap();
+    Map<String, Object> mapp1 = Maps.newHashMap();
+    Map<String, Object> mapp2 = Maps.newHashMap();
+    mapp1.put("key2", 1);
+    mapp2.put("key3", 3);
+    mapp1.put("key4", map2);
+    mapp.put("i1", map1);
+    mapp.remove("i2");
+    mapp.put("i3", "hello3");
+    processor.process(mapp);
     entry = processor.getLatest(oldVersion);
+    Object mergedData = processor.merge(map, entry.getValue());
     System.out.println(gson.toJson(entry.getValue()));
+    System.out.println(gson.toJson(mergedData));
+    System.out.println(gson.toJson(mapp));
     System.out.println(gson.toJson(processor.rootVersionNodeRef.get()));
   }
 }
