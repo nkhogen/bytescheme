@@ -1,19 +1,21 @@
 package com.bytescheme.common.versions;
 
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.bytescheme.common.utils.BasicUtils;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 
 /**
- * Finds the changes in the object properties from the previous ones.
- * Each caller can get different deltas depending on the last seen version.
+ * Finds the changes in the object properties from the previous ones. Each
+ * caller can get different deltas depending on the last seen version.
  *
  * @author Naorem Khogendro Singh
  *
@@ -96,7 +98,7 @@ public class VersionProcessor {
 
   private VersionNode buildVersionNode(VersionNode versionNode, Object currentData,
       Object newData, long versionId) {
-    if (currentData == newData || (currentData == null && newData == null)) {
+    if (currentData == newData) {
       return null;
     }
 
@@ -104,18 +106,19 @@ public class VersionProcessor {
       return VersionNode.createDeleted(versionId);
     }
 
-    if (currentData == null || currentData.getClass() != newData.getClass()) {
-      return VersionNode.createWithData(versionId, newData);
-    }
-
     if (!(newData instanceof Map)) {
-      if (currentData.equals(newData)) {
+      if (newData.equals(currentData)) {
         return null;
+      }
+      if (newData instanceof Collection) {
+        return VersionNode.createWithData(versionId,
+            BasicUtils.deepCopy((Collection<?>) newData));
       }
       return VersionNode.createWithData(versionId, newData);
     }
-    if ((currentData instanceof Map) ^ (newData instanceof Map)) {
-      return VersionNode.createWithData(versionId, newData);
+    if (!(currentData instanceof Map)) {
+      return VersionNode.createWithData(versionId,
+          BasicUtils.deepCopy((Map<?, ?>) newData));
     }
     boolean isVersionChanged = false;
     Map<?, ?> currentMap = (Map<?, ?>) currentData;
@@ -170,9 +173,6 @@ public class VersionProcessor {
     System.out.println(gson.toJson(entry.getValue()));
     System.out.println(gson.toJson(processor.rootVersionNodeRef.get()));
     long oldVersion = entry.getKey();
-    map = Maps.newHashMap();
-    map1 = Maps.newHashMap();
-    map2 = Maps.newHashMap();
     map1.put("key2", 1);
     map2.put("key3", 3);
     map1.put("key4", map2);
@@ -185,13 +185,11 @@ public class VersionProcessor {
     oldVersion = entry.getKey();
     System.out.println(gson.toJson(entry.getValue()));
     System.out.println(gson.toJson(processor.rootVersionNodeRef.get()));
-    map = Maps.newHashMap();
-    map1 = Maps.newHashMap();
-    map2 = Maps.newHashMap();
     map1.put("key2", 1);
     map2.put("key3", 3);
     map1.put("key4", map2);
     map.put("i1", map1);
+    map.remove("i2");
     map.put("i3", "hello3");
     processor.process(map);
     entry = processor.getLatest(oldVersion);
