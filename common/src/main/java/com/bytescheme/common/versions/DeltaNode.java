@@ -1,6 +1,9 @@
 package com.bytescheme.common.versions;
 
 import java.util.Map;
+import java.util.Objects;
+
+import com.bytescheme.common.utils.JsonUtils;
 
 /**
  * 
@@ -52,5 +55,34 @@ public class DeltaNode {
 
   public boolean isTerminal() {
     return childNodes == null;
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    }
+    if (object == null) {
+      return false;
+    }
+    if (getClass() != object.getClass()) {
+      return false;
+    }
+    DeltaNode other = (DeltaNode) object;
+    if (type != other.getType()) {
+      return false;
+    }
+    if (!Objects.equals(data, other.getData())) {
+      return false;
+    }
+    if (!Objects.equals(childNodes, other.getChildNodes())) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return JsonUtils.toJson(this);
   }
 }

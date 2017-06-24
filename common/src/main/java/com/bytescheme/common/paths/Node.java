@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.apache.commons.collections4.MapUtils;
 
+import com.bytescheme.common.utils.JsonUtils;
 import com.google.common.base.Preconditions;
 
 /**
@@ -54,5 +55,10 @@ public class Node<T> {
 
   public T getValue() {
     return value;
+  }
+
+  @Override
+  public String toString() {
+    return JsonUtils.toJson(this);
   }
 }

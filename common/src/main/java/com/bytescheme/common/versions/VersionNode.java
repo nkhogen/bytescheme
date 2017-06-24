@@ -3,6 +3,9 @@ package com.bytescheme.common.versions;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
+import java.util.Objects;
+
+import com.bytescheme.common.utils.JsonUtils;
 
 /**
  *
@@ -53,5 +56,34 @@ public class VersionNode {
 
   public boolean isTerminal() {
     return childNodes == null;
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    }
+    if (object == null) {
+      return false;
+    }
+    if (getClass() != object.getClass()) {
+      return false;
+    }
+    VersionNode other = (VersionNode) object;
+    if (versionId != other.getVersionId()) {
+      return false;
+    }
+    if (!Objects.equals(data, other.getData())) {
+      return false;
+    }
+    if (!Objects.equals(childNodes, other.getChildNodes())) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return JsonUtils.toJson(this);
   }
 }
