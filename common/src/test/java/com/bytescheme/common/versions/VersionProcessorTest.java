@@ -2,13 +2,18 @@ package com.bytescheme.common.versions;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.junit.Test;
 
+import com.bytescheme.common.utils.JsonUtils;
 import com.bytescheme.common.versions.DeltaNode.Type;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -19,7 +24,7 @@ import com.google.common.collect.Maps;
 public class VersionProcessorTest {
 
   @Test
-  public void testMethods() {
+  public void testMethods() throws IOException {
     VersionProcessor processor = new VersionProcessor();
     Map<String, Object> map = Maps.newHashMap();
     Map<String, Object> map1 = Maps.newHashMap();
@@ -51,18 +56,24 @@ public class VersionProcessorTest {
     assertEquals(childNode, entry.getValue().getChildNodes());
     Map<String, Object> mapp = Maps.newHashMap();
     Map<String, Object> mapp1 = Maps.newHashMap();
-    Map<String, Object> mapp2 = Maps.newHashMap();
     mapp1.put("key2", 1);
-    for (int i = 0; i < 100; i++) {
-      mapp2.put("key" + i, i);
-    }
     mapp1.put("key4", map2);
     mapp.put("i1", map1);
     mapp.remove("i2");
     mapp.put("i3", "hello3");
+    mapp.put("i4", Lists.newArrayList(1, 2, 3, 4));
+    for (int i = 10; i < 100; i++) {
+      mapp.put("key" + i, i);
+    }
     processor.process(mapp);
     entry = processor.getLatest(oldVersion);
     Object mergedData = processor.merge(map, entry.getValue());
-    assertEquals(mergedData, mapp);
+    assertEquals(mapp, mergedData);
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    processor.writeLatest(oldVersion, outputStream);
+    System.out.println(outputStream.toString());
+    ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+    mergedData = processor.merge(map, inputStream);
+    System.out.println(JsonUtils.toJson(mergedData));
   }
 }
