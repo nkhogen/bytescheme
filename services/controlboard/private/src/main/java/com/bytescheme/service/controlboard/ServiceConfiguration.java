@@ -12,6 +12,7 @@ import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 import com.bytescheme.common.utils.JsonUtils;
 import com.bytescheme.rpc.core.RemoteObjectServer;
 import com.bytescheme.rpc.security.AuthData;
+import com.bytescheme.rpc.security.DefaultAuthenticationDataProvider;
 import com.bytescheme.rpc.security.RSAAuthenticationProvider;
 import com.bytescheme.rpc.security.SecurityProvider;
 import com.bytescheme.service.controlboard.remoteobjects.TargetControlBoardImpl;
@@ -36,8 +37,10 @@ public class ServiceConfiguration {
     Map<String, AuthData> authDataMap = JsonUtils.mapFromJsonFile(
         serviceProperties.getBaseDir() + serviceProperties.getAuthenticationJsonFile(),
         AuthData.class);
+    DefaultAuthenticationDataProvider authDataProvider = new DefaultAuthenticationDataProvider();
+    authDataProvider.onPropertyChange(authDataMap, authDataMap);
     RSAAuthenticationProvider rsaAuthenticationProvider = new RSAAuthenticationProvider(
-        serviceProperties.getBaseDir() + serviceProperties.getSshKeysDir(), authDataMap);
+        serviceProperties.getBaseDir() + serviceProperties.getSshKeysDir(), authDataProvider);
     SecurityProvider securityProvider = new SecurityProvider(rsaAuthenticationProvider);
     RemoteObjectServer server = new RemoteObjectServer(true, securityProvider);
     VideoBroadcastHandler.getInstance().setCommandFile(

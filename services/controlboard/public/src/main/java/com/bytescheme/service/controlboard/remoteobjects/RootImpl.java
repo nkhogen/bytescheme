@@ -1,33 +1,30 @@
 package com.bytescheme.service.controlboard.remoteobjects;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
+import java.security.PublicKey;
 import java.util.Collections;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.bytescheme.common.properties.FilePropertyChangePublisher;
-import com.bytescheme.common.properties.PropertyChangePublisher;
 import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.core.Constants;
 import com.bytescheme.rpc.core.RemoteMethodCallException;
 import com.bytescheme.rpc.core.RemoteObject;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
-import com.bytescheme.rpc.core.RemoteObjectFactory;
-import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.BaseMockControlBoard;
+import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 
 /**
  * Root object implementation.
@@ -35,43 +32,21 @@ import com.google.common.base.Strings;
  * @author Naorem Khogendro Singh
  *
  */
-public class RootImpl implements Root, RemoteObjectFactory {
+public class RootImpl implements Root {
   private static final long serialVersionUID = 1L;
   private static final Logger LOG = LoggerFactory.getLogger(RootImpl.class);
   private static final int CLIENT_RETRY_LIMIT = 3;
   private static final UUID OBJECT_ID = new UUID(0L, 0L);
   private static final String TARGET_USER = "controlboard";
-  private final AtomicReference<Map<String, String>> objectIdsRef = new AtomicReference<>(
-      Collections.emptyMap());
-  private final AtomicReference<Map<String, String>> endpointsRef = new AtomicReference<>(
-      Collections.emptyMap());
+  private final Function<String, Set<ObjectEndpoint>> objectEndpointProvider;
+
   private final ConcurrentHashMap<String, RemoteObjectClient> clients = new ConcurrentHashMap<>(
       Collections.emptyMap());
-  private final String sshKeysDir;
   private boolean enableMock = false;
 
-  public RootImpl(String objectsJsonFile, String endpointsJsonFile, String sshKeysDir) {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(objectsJsonFile),
-        "Invalid objects JSON file");
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(endpointsJsonFile),
-        "Invalid endpoints JSON file");
-    PropertyChangePublisher<String> objectsChangePublisher = new FilePropertyChangePublisher<String>(
-        objectsJsonFile, String.class);
-    objectIdsRef.set(objectsChangePublisher.getCurrentProperties());
-    objectsChangePublisher.registerListener((updated, all) -> {
-      objectIdsRef.set(all);
-    });
-
-    PropertyChangePublisher<String> endpointsChangePublisher = new FilePropertyChangePublisher<String>(
-        endpointsJsonFile, String.class);
-    endpointsRef.set(endpointsChangePublisher.getCurrentProperties());
-    endpointsChangePublisher.registerListener((updated, all) -> {
-      endpointsRef.set(all);
-    });
-    File file = new File(sshKeysDir);
-    Preconditions.checkArgument(file.exists() && file.isDirectory() && file.canRead(),
-        "Invalid ssh key folder %s", sshKeysDir);
-    this.sshKeysDir = sshKeysDir;
+  public RootImpl(Function<String, Set<ObjectEndpoint>> objectEndpointProvider) {
+    this.objectEndpointProvider = Preconditions.checkNotNull(objectEndpointProvider,
+        "Invalid object endpoint provider");
   }
 
   public boolean isEnableMock() {
@@ -89,22 +64,21 @@ public class RootImpl implements Root, RemoteObjectFactory {
 
   @Override
   public ControlBoard getControlBoard(String user) {
-    Map<String, String> objectIds = objectIdsRef.get();
-    Map<String, String> endpoints = endpointsRef.get();
-    String objectIdStr = objectIds.get(user);
-    if (objectIdStr == null) {
+    Set<ObjectEndpoint> objectEndpoints = objectEndpointProvider.apply(user);
+    // Support for only one
+    ObjectEndpoint objectEndpoint = Iterables.getFirst(objectEndpoints, null);
+    if (objectEndpoint == null) {
       return null;
     }
-    String endpoint = endpoints.get(objectIdStr);
-    if (endpoint == null) {
-      return null;
-    }
-    UUID objectId = UUID.fromString(objectIdStr);
+    Preconditions.checkNotNull(objectEndpoint.getObjectId());
+    Preconditions.checkNotNull(objectEndpoint.getEndpoint());
+    UUID objectId = UUID.fromString(objectEndpoint.getObjectId());
     try {
       if (enableMock) {
         return new BaseMockControlBoard(objectId);
       }
-      ControlBoard remoteControlBoard = createRemoteObject(ControlBoard.class, objectId);
+      ControlBoard remoteControlBoard = createRemoteObject(ControlBoard.class, objectId,
+          objectEndpoint.getEndpoint(), objectEndpoint.getPublicKey());
       return new DelegateControlBoardImpl(objectId, remoteControlBoard);
     } catch (Exception e) {
       throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
@@ -112,20 +86,11 @@ public class RootImpl implements Root, RemoteObjectFactory {
     }
   }
 
-  @Override
-  public <T extends RemoteObject> T createRemoteObject(Class<T> clazz, UUID objectId) {
+  private <T extends RemoteObject> T createRemoteObject(Class<T> clazz, UUID objectId,
+      String endpoint, PublicKey publicKey) {
     return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(),
         new Class<?>[] { clazz }, (proxy, method, args) -> {
-          Map<String, String> endpoints = endpointsRef.get();
-          if (endpoints == null) {
-            throw new IllegalStateException("No points found");
-          }
-          String endpoint = endpoints.get(objectId.toString());
-          if (endpoint == null) {
-            throw new IllegalArgumentException(
-                String.format("Object ID %s not found", objectId));
-          }
-          return invokeMethod(clazz, objectId, method, args, endpoint);
+          return invokeMethod(clazz, objectId, method, args, endpoint, publicKey);
         }));
   }
 
@@ -134,7 +99,8 @@ public class RootImpl implements Root, RemoteObjectFactory {
    * hood when a method of the remote object is invoked.
    */
   private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId,
-      Method method, Object[] args, String endpoint) throws MalformedURLException {
+      Method method, Object[] args, String endpoint, PublicKey publicKey)
+      throws MalformedURLException {
     int retry = 0;
     int parameterCount = (args == null) ? 0 : 1;
     do {
@@ -149,8 +115,7 @@ public class RootImpl implements Root, RemoteObjectFactory {
             RemoteObjectClientBuilder clientBuilder = new RemoteObjectClientBuilder(
                 endpoint);
             client = clientBuilder.login(TARGET_USER,
-                CryptoUtils.encrypt(TARGET_USER, CryptoUtils.getPublicKey(
-                    sshKeysDir + File.separator + objectId.toString() + ".pub")));
+                CryptoUtils.encrypt(TARGET_USER, publicKey));
             clients.put(endpoint, client);
           }
         }

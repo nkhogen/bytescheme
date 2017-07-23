@@ -2,11 +2,11 @@ package com.bytescheme.rpc.security;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import com.bytescheme.common.utils.CryptoUtils;
 import com.google.api.client.repackaged.com.google.common.base.Strings;
 import com.google.api.client.util.Preconditions;
+import com.google.common.base.Function;
 
 /**
  * RSA key based authentication provider. The roles come from a file.
@@ -14,12 +14,12 @@ import com.google.api.client.util.Preconditions;
  * @author Naorem Khogendro Singh
  *
  */
-public class RSAAuthenticationProvider extends FileAuthenticationProvider {
+public class RSAAuthenticationProvider extends BasicAuthenticationProvider {
   private final File keyFolder;
 
-  public RSAAuthenticationProvider(String keyFolder, Map<String, AuthData> authDataMap)
+  public RSAAuthenticationProvider(String keyFolder, Function<String, AuthData> authDataProvider)
       throws IOException {
-    super(authDataMap);
+    super(authDataProvider);
     Preconditions.checkArgument(!Strings.isNullOrEmpty(keyFolder), "Invalid key folder");
     this.keyFolder = new File(keyFolder);
     Preconditions.checkArgument(this.keyFolder.exists() && this.keyFolder.isDirectory()
@@ -36,8 +36,7 @@ public class RSAAuthenticationProvider extends FileAuthenticationProvider {
     if (!user.equals(decryptedText)) {
       return null;
     }
-    Map<String, AuthData> authDataMap = super.authDataMapRef.get();
-    AuthData authData = authDataMap.get(user);
+    AuthData authData = authDataProvider.apply(user);
     return new Authentication(user, authentication.getPassword(),
         authData == null ? null : authData.getRoles());
   }

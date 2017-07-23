@@ -91,6 +91,8 @@ public abstract class AbstractPropertyChangePublisher<V> extends AbstractSchedul
   @Override
   public void registerListener(PropertyChangeListener<V> listener) {
     Preconditions.checkNotNull(listener, "Invalid property change listener");
+    Map<String, V> properties = propertiesRef.get();
+    listener.onPropertyChange(properties, properties);
     listeners.add(listener);
   }
 

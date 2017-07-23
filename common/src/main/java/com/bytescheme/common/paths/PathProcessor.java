@@ -4,17 +4,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.collections4.MapUtils;
-
-import com.bytescheme.common.properties.PropertyChangeListener;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
 
 /**
  * This class finds a string path like k1/k2/../kN in a tree. The matcher can be
@@ -23,37 +18,17 @@ import com.google.common.collect.Maps;
  * @author Naorem Khogendro Singh
  *
  */
-public class PathProcessor implements PropertyChangeListener<Object> {
-  private final AtomicReference<Node<String>> dataRef = new AtomicReference<>();
+public class PathProcessor {
+  private final Function<String, Node<String>> dataProvider;
 
-  public static class NodeTransformer implements Function<Object, Node<String>> {
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Node<String> apply(Object input) {
-      if (input instanceof String) {
-        return Node.withValue((String) input);
-      } else if (input instanceof Map) {
-        return Node.withMap(Maps.transformValues((Map<String, Object>) input, this));
-      }
-      throw new IllegalArgumentException("Unknown type " + input.getClass());
-    }
-
+  public PathProcessor(Function<String, Node<String>> dataProvider) {
+    this.dataProvider = Preconditions.checkNotNull(dataProvider, "Invalid data provider");
   }
 
-  public PathProcessor(Node<String> data) {
-    Preconditions.checkNotNull(data, "Invalid node data");
-    this.dataRef.set(data);
-  }
-
-  public PathProcessor(Map<String, Object> map) {
-    transformAndSetData(map);
-  }
-
-  public Set<String> procesPath(String path) {
+  public Set<String> procesPath(String key, String path) {
     Preconditions.checkArgument(!Strings.isNullOrEmpty(path), "Invalid search path");
     Set<String> values = new HashSet<>();
-    process(0, path, values, dataRef.get());
+    process(0, path, values, dataProvider.apply(key));
     return values;
   }
 
@@ -61,12 +36,6 @@ public class PathProcessor implements PropertyChangeListener<Object> {
     Pattern pattern = Pattern.compile(input);
     Matcher matcher = pattern.matcher(key);
     return matcher.matches();
-  }
-
-  private void transformAndSetData(Map<String, Object> map) {
-    Preconditions.checkArgument(MapUtils.isNotEmpty(map), "Invalid authorization data");
-    dataRef.set(
-        Node.withMap(Maps.transformValues(map, new NodeTransformer())));
   }
 
   private void process(int startIndex, String path, Set<String> values,
@@ -95,11 +64,5 @@ public class PathProcessor implements PropertyChangeListener<Object> {
         process(endIndex + 1, path, values, entry.getValue());
       }
     }
-  }
-
-  @Override
-  public void onPropertyChange(Map<String, Object> changedProperties,
-      Map<String, Object> allProperties) {
-    transformAndSetData(allProperties);
   }
 }

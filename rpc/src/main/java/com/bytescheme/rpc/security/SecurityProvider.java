@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
  */
 public class SecurityProvider {
   private static final Logger LOG = LoggerFactory.getLogger(SecurityProvider.class);
-  private static final String AUTH_PATH = "%s/%s:%d";
+  private static final String AUTH_PATH = "%s:%d";
   private final AuthenticationProvider authenticationProvider;
   private final PathProcessor pathProcessor;
 
@@ -83,11 +83,11 @@ public class SecurityProvider {
     Preconditions.checkNotNull(authentication);
     int parameterCount = request.getParameters() == null ? 0
         : request.getParameters().length;
-    String authPath = String.format(AUTH_PATH, request.getObjectId(), request.getName(),
-        parameterCount);
+    String authPath = String.format(AUTH_PATH, request.getName(), parameterCount);
     LOG.info("Authorization check for path {} in request ID {}", authPath,
         request.getRequestId());
-    Set<String> roles = pathProcessor.procesPath(authPath);
+    Set<String> roles = pathProcessor.procesPath(request.getObjectId().toString(),
+        authPath);
     Set<String> userRoles = authentication.getRoles();
     if (CollectionUtils.isEmpty(userRoles)) {
       return CollectionUtils.isEmpty(roles);

@@ -3,7 +3,6 @@ package com.bytescheme.rpc.security;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +12,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
@@ -22,15 +22,15 @@ import com.google.common.base.Strings;
  * @author Naorem Khogendro Singh
  *
  */
-public class GoogleAuthenticationProvider extends FileAuthenticationProvider {
+public class GoogleAuthenticationProvider extends BasicAuthenticationProvider {
   private static final Logger LOG = LoggerFactory
       .getLogger(GoogleAuthenticationProvider.class);
   private static final String ISSUER = "accounts.google.com";
   private final GoogleIdTokenVerifier verifier;
 
-  public GoogleAuthenticationProvider(Map<String, AuthData> authDataMap, String clientId)
+  public GoogleAuthenticationProvider(String clientId, Function<String, AuthData> authDataProvider)
       throws IOException, GeneralSecurityException {
-    super(authDataMap);
+    super(authDataProvider);
     Preconditions.checkArgument(!Strings.isNullOrEmpty(clientId),
         "Invalid Google client ID");
     NetHttpTransport transport = new NetHttpTransport.Builder().doNotValidateCertificate()
@@ -51,7 +51,6 @@ public class GoogleAuthenticationProvider extends FileAuthenticationProvider {
   public Authentication authenticate(Authentication authentication) {
     Preconditions.checkNotNull(authentication, "Invalid authentication object");
     Preconditions.checkNotNull(authentication.getUser(), "Invalid user");
-    Map<String, AuthData> authDataMap = super.authDataMapRef.get();
     GoogleIdToken idToken = null;
     try {
       idToken = verifier.verify(authentication.getPassword());
@@ -66,7 +65,7 @@ public class GoogleAuthenticationProvider extends FileAuthenticationProvider {
     if (!authentication.getUser().equals(email)) {
       return null;
     }
-    AuthData authData = authDataMap.get(email);
+    AuthData authData = authDataProvider.apply(email);
     return new Authentication(email, authentication.getPassword(),
         authData == null ? null : authData.getRoles());
   }

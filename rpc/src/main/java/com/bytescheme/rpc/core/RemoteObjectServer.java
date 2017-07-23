@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import com.bytescheme.rpc.security.Authentication;
 import com.bytescheme.rpc.security.SecurityProvider;
 import com.bytescheme.rpc.security.Session;
-import com.bytescheme.rpc.security.SessionManager;
 import com.google.common.base.Preconditions;
 
 /**
@@ -47,34 +46,41 @@ public class RemoteObjectServer implements RemoteObjectListener {
     this.autoRegisterRemoteObject = autoRegisterRemoteObject;
   }
 
-  public synchronized void register(RemoteObject object) {
+  public void register(RemoteObject object) {
     Preconditions.checkNotNull(object, "Class is invalid");
     if (!objectMap.containsKey(object.getObjectId())) {
       Class<? extends RemoteObject> clazz = object.getClass();
-      Method[] methods = clazz.getMethods();
-      ClassMetaData classMetaData = classMetaDataMap.get(clazz);
-      if (classMetaData == null) {
-        classMetaData = new ClassMetaData();
-        for (Method method : methods) {
-          classMetaData.addMethod(method);
+      synchronized (clazz) {
+        if (!objectMap.containsKey(object.getObjectId())) {
+          Method[] methods = clazz.getMethods();
+          ClassMetaData classMetaData = classMetaDataMap.get(clazz);
+          if (classMetaData == null) {
+            classMetaData = new ClassMetaData();
+            for (Method method : methods) {
+              classMetaData.addMethod(method);
+            }
+            classMetaDataMap.put(clazz, classMetaData);
+          }
+          objectMap.put(object.getObjectId(), object);
+          classMetaData.setInstanceCount(classMetaData.getInstanceCount() + 1);
         }
-        classMetaDataMap.put(clazz, classMetaData);
       }
-      objectMap.put(object.getObjectId(), object);
-      classMetaData.setInstanceCount(classMetaData.getInstanceCount() + 1);
     }
   }
 
-  public synchronized void unregister(UUID objectId) {
+  public void unregister(UUID objectId) {
     Preconditions.checkNotNull(objectId, "Object ID is invalid");
     RemoteObject remoteObject = objectMap.remove(objectId);
     if (remoteObject != null) {
-      ClassMetaData classMetaData = classMetaDataMap.get(remoteObject.getClass());
-      Preconditions.checkNotNull(classMetaData);
-      if (classMetaData.getInstanceCount() <= 1) {
-        classMetaDataMap.remove(remoteObject.getClass());
-      } else {
-        classMetaData.setInstanceCount(classMetaData.getInstanceCount() - 1);
+      Class<? extends RemoteObject> clazz = remoteObject.getClass();
+      synchronized (clazz) {
+        ClassMetaData classMetaData = classMetaDataMap.get(clazz);
+        Preconditions.checkNotNull(classMetaData);
+        if (classMetaData.getInstanceCount() <= 1) {
+          classMetaDataMap.remove(clazz);
+        } else {
+          classMetaData.setInstanceCount(classMetaData.getInstanceCount() - 1);
+        }
       }
     }
   }
@@ -148,11 +154,11 @@ public class RemoteObjectServer implements RemoteObjectListener {
         LOG.info("Security provider not configured");
         return response;
       }
-      Session session = SessionManager.getInstance()
-          .deleteSession(request.getSessionId());
-      if (session != null) {
-        response.setReturnValue(session.getId());
+      // Chain of security providers.
+      for (SecurityProvider securityProvider : securityProviders) {
+        securityProvider.destroySession(request.getSessionId());
       }
+      response.setReturnValue(request.getSessionId());
     } catch (RemoteMethodCallException e) {
       exception = e;
     } catch (Exception e) {
@@ -176,6 +182,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
         (requestId, elapsedTime, methodTime) -> {
           LOG.info(Constants.METHOD_ENTER_LOG_FORMAT, requestId, "process", elapsedTime);
         });
+    boolean isAutoRegistered = false;
     try {
       Preconditions.checkNotNull(request);
       Preconditions.checkNotNull(request.getObjectId());
@@ -186,6 +193,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
         Preconditions.checkNotNull(object);
         if (autoRegisterRemoteObject) {
           register(object);
+          isAutoRegistered = true;
         }
       }
       Class<? extends RemoteObject> clazz = object.getClass();
@@ -228,6 +236,9 @@ public class RemoteObjectServer implements RemoteObjectListener {
       exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
           "Error occurred in server", e);
     } finally {
+      if (isAutoRegistered) {
+        unregister(request.getObjectId());
+      }
       MethodCallRecorder.uninit((requestId, elapsedTime, methodTime) -> {
         LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "process", elapsedTime,
             methodTime);
