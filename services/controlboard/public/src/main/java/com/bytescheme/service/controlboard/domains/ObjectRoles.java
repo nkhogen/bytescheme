@@ -4,6 +4,7 @@ import java.util.Set;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 @DynamoDBTable(tableName = "ObjectRoles")
@@ -21,7 +22,7 @@ public class ObjectRoles {
     this.objectId = objectId;
   }
 
-  @DynamoDBHashKey(attributeName = "METHOD")
+  @DynamoDBRangeKey(attributeName = "METHOD")
   public String getMethod() {
     return method;
   }
