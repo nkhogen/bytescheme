@@ -1,7 +1,5 @@
 package com.bytescheme.service.controlboard.domains;
 
-import java.util.Set;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -10,7 +8,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 public class UserRoles {
   private String user;
   private String password;
-  private Set<String> roles;
+  private String roles;
 
   @DynamoDBHashKey(attributeName = "USER")
   public String getUser() {
@@ -31,11 +29,11 @@ public class UserRoles {
   }
 
   @DynamoDBAttribute(attributeName = "ROLES")
-  public Set<String> getRoles() {
+  public String getRoles() {
     return roles;
   }
 
-  public void setRoles(Set<String> roles) {
+  public void setRoles(String roles) {
     this.roles = roles;
   }
 }

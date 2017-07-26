@@ -25,7 +25,7 @@ public class PathProcessor {
     this.dataProvider = Preconditions.checkNotNull(dataProvider, "Invalid data provider");
   }
 
-  public Set<String> procesPath(String key, String path) {
+  public Set<String> processPath(String key, String path) {
     Preconditions.checkArgument(!Strings.isNullOrEmpty(path), "Invalid search path");
     Set<String> values = new HashSet<>();
     process(0, path, values, dataProvider.apply(key));

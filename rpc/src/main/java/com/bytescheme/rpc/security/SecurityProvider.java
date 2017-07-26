@@ -86,7 +86,7 @@ public class SecurityProvider {
     String authPath = String.format(AUTH_PATH, request.getName(), parameterCount);
     LOG.info("Authorization check for path {} in request ID {}", authPath,
         request.getRequestId());
-    Set<String> roles = pathProcessor.procesPath(request.getObjectId().toString(),
+    Set<String> roles = pathProcessor.processPath(request.getObjectId().toString(),
         authPath);
     Set<String> userRoles = authentication.getRoles();
     if (CollectionUtils.isEmpty(userRoles)) {

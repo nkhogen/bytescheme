@@ -1,14 +1,24 @@
 package com.bytescheme.service.controlboard.domains;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.collections4.CollectionUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.bytescheme.common.paths.Node;
+import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.security.AuthData;
 import com.bytescheme.service.controlboard.remoteobjects.ObjectEndpoint;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.common.base.Function;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * Dynamo DB configuration provider.
@@ -30,10 +40,17 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
       if (entity == null) {
         return null;
       }
-      // TODO encryption
+      // TODO decryption
       AuthData authData = new AuthData();
       authData.setPassword(entity.getPassword());
-      authData.setRoles(entity.getRoles());
+      Set<String> roles = Sets.newHashSet();
+      for (String token : entity.getRoles().split(",")) {
+        String role = token.trim();
+        if (!Strings.isNullOrEmpty(role)) {
+          roles.add(role);
+        }
+      }
+      authData.setRoles(roles);
       return authData;
     };
   }
@@ -41,18 +58,46 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
   @Override
   public Function<String, Node<String>> getNodeProvider() {
     return objectId -> {
-      DynamoDBQueryExpression<ObjectRoles> queryExpression = new DynamoDBQueryExpression<ObjectRoles>();
-      // dbMapper.query(clazz, queryExpression)
-      // TODO
-      return null;
+      ObjectRoles hashKey = new ObjectRoles();
+      hashKey.setObjectId(objectId);
+      DynamoDBQueryExpression<ObjectRoles> queryExpression = new DynamoDBQueryExpression<ObjectRoles>()
+          .withHashKeyValues(hashKey);
+      QueryResultPage<ObjectRoles> result = dbMapper.queryPage(ObjectRoles.class,
+          queryExpression);
+      List<ObjectRoles> objectRoles = result.getResults();
+      if (CollectionUtils.isEmpty(objectRoles)) {
+        return null;
+      }
+      Map<String, Node<String>> map = Maps.newHashMap();
+      objectRoles.forEach(obj -> {
+        map.put(obj.getMethod(), Node.withValue(obj.getRoles()));
+      });
+      return Node.withMap(map);
     };
   }
 
   @Override
   public Function<String, Set<ObjectEndpoint>> getObjectEndpointsProvider() {
     return user -> {
-      // TODO
-      return null;
+      UserObjects hashKey = new UserObjects();
+      hashKey.setUser(user);
+      DynamoDBQueryExpression<UserObjects> queryExpression = new DynamoDBQueryExpression<UserObjects>()
+          .withHashKeyValues(hashKey);
+      QueryResultPage<UserObjects> result = dbMapper.queryPage(UserObjects.class,
+          queryExpression);
+      List<UserObjects> userObjects = result.getResults();
+      ImmutableSet.Builder<ObjectEndpoint> objectEndpointsBuilder = ImmutableSet
+          .builder();
+      if (CollectionUtils.isEmpty(userObjects)) {
+        return objectEndpointsBuilder.build();
+      }
+      userObjects.forEach(obj -> {
+        Endpoints endpoints = dbMapper.load(Endpoints.class, obj.getObjectId());
+        objectEndpointsBuilder
+            .add(new ObjectEndpoint(endpoints.getObjectId(), endpoints.getEndpoint(),
+                CryptoUtils.getPublicKey(endpoints.getSshKey().trim().getBytes())));
+      });
+      return objectEndpointsBuilder.build();
     };
   }
 }
