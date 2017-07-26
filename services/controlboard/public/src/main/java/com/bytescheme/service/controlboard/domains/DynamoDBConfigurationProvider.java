@@ -12,6 +12,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.bytescheme.common.paths.Node;
 import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.security.AuthData;
+import com.bytescheme.service.controlboard.ConfigurationProvider;
 import com.bytescheme.service.controlboard.remoteobjects.ObjectEndpoint;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.common.base.Function;

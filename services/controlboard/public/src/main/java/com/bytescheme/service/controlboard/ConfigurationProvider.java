@@ -1,4 +1,4 @@
-package com.bytescheme.service.controlboard.domains;
+package com.bytescheme.service.controlboard;
 
 import java.util.Set;
 
