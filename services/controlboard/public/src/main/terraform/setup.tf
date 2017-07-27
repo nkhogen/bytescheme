@@ -20,7 +20,6 @@ provider "aws" {
   profile                 = "default"
 }
 
-# Create instance profile
 resource "aws_iam_instance_profile" "controller-profile" {
   name  = "controller_instance_profile"
   role = "${aws_iam_role.controller-role.name}"
@@ -45,6 +44,38 @@ resource "aws_iam_role" "controller-role" {
     ]
 }
 EOF
+}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170619.1"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+resource "aws_instance" "controller" {
+  ami           = "${data.aws_ami.ubuntu.id}"
+  instance_type = "t2.micro"
+  key_name = "controlboard-us-west-1"
+  security_groups = ["applications"]
+  iam_instance_profile = "${aws_iam_instance_profile.controller-profile.name}"
+  associate_public_ip_address = true
+
+  provisioner "file" {
+    source = "${path.module}/../../../target/bytescheme-controlboard-public-0.0.1-SNAPSHOT.jar"
+    destination = "/controlboard/bin"
+  }
+
+  tags {
+    Name = "controller"
+  }
 }
 
 resource "aws_iam_role_policy" "controller-dynamodb-policy" {

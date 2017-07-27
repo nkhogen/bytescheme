@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -28,6 +30,8 @@ import com.google.common.collect.Sets;
  *
  */
 public class DynamoDBConfigurationProvider implements ConfigurationProvider {
+  private static final Logger LOG = LoggerFactory
+      .getLogger(DynamoDBConfigurationProvider.class);
   private final DynamoDBMapper dbMapper;
 
   public DynamoDBConfigurationProvider(DynamoDBMapper dbMapper) {
@@ -37,6 +41,7 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
   @Override
   public Function<String, AuthData> getAuthenticationDataProvider() {
     return user -> {
+      LOG.info("Retrieving auth data for user: {}", user);
       UserRoles entity = dbMapper.load(UserRoles.class, user);
       if (entity == null) {
         return null;
@@ -59,6 +64,7 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
   @Override
   public Function<String, Node<String>> getNodeProvider() {
     return objectId -> {
+      LOG.info("Retrieving object roles for object ID: {}", objectId);
       ObjectRoles hashKey = new ObjectRoles();
       hashKey.setObjectId(objectId);
       DynamoDBQueryExpression<ObjectRoles> queryExpression = new DynamoDBQueryExpression<ObjectRoles>()
@@ -80,6 +86,7 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
   @Override
   public Function<String, Set<ObjectEndpoint>> getObjectEndpointsProvider() {
     return user -> {
+      LOG.info("Retrieving endpoints for user: {}", user);
       UserObjects hashKey = new UserObjects();
       hashKey.setUser(user);
       DynamoDBQueryExpression<UserObjects> queryExpression = new DynamoDBQueryExpression<UserObjects>()

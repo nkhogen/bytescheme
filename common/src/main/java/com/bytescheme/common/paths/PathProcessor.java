@@ -7,6 +7,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -19,6 +22,8 @@ import com.google.common.base.Strings;
  *
  */
 public class PathProcessor {
+  private static final Logger LOG = LoggerFactory.getLogger(PathProcessor.class);
+
   private final Function<String, Node<String>> dataProvider;
 
   public PathProcessor(Function<String, Node<String>> dataProvider) {
@@ -43,6 +48,7 @@ public class PathProcessor {
     if (data == null) {
       return;
     }
+    LOG.info("Path: {}", data);
     if (startIndex >= path.length()) {
       if (data.isMap()) {
         throw new IllegalArgumentException(String.format(

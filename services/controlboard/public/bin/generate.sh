@@ -12,9 +12,9 @@ sudo systemctl start controlboard.service
 
 
 # To generate self-signed (Optional)
-keytool -genkey -alias jetty -storetype PKCS12 -keyalg RSA -keysize 2048 -keystore keystore.p12 -validity 3650
+sudo keytool -genkey -alias jetty -storetype PKCS12 -keyalg RSA -keysize 2048 -keystore keystore.p12 -validity 3650
 
-server.ssl.key-store: bytescheme.p12
-server.ssl.key-store-password: mypassword
-server.ssl.keyStoreType: PKCS12
-server.ssl.keyAlias: jetty
+# server.ssl.key-store: bytescheme.p12
+# server.ssl.key-store-password: mypassword
+# server.ssl.keyStoreType: PKCS12
+# server.ssl.keyAlias: jetty

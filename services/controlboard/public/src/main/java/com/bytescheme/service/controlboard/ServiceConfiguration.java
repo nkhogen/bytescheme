@@ -5,10 +5,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.bytescheme.common.paths.PathProcessor;
 import com.bytescheme.rpc.core.RemoteObjectServer;
 import com.bytescheme.rpc.security.GoogleAuthenticationProvider;
 import com.bytescheme.rpc.security.SecurityProvider;
+import com.bytescheme.service.controlboard.domains.DynamoDBConfigurationProvider;
 import com.bytescheme.service.controlboard.remoteobjects.RootImpl;
 
 /**
@@ -43,6 +46,8 @@ public class ServiceConfiguration {
 
   @Bean
   public ConfigurationProvider configurationProvider() {
-    return new DefaultConfigurationProvider(serviceProperties);
+    // return new DefaultConfigurationProvider(serviceProperties);
+    return new DynamoDBConfigurationProvider(
+        new DynamoDBMapper(AmazonDynamoDBClientBuilder.defaultClient()));
   }
 }
