@@ -23,6 +23,7 @@ public class ServiceProperties {
   private String authenticationJsonFile;
   private String authorizationJsonFile;
   private boolean enableMock;
+  private boolean enableFileConfig;
 
   @PostConstruct
   public void init() {
@@ -110,5 +111,13 @@ public class ServiceProperties {
 
   public void setEnableMock(boolean enableMock) {
     this.enableMock = enableMock;
+  }
+
+  public boolean isEnableFileConfig() {
+    return enableFileConfig;
+  }
+
+  public void setEnableFileConfig(boolean enableFileConfig) {
+    this.enableFileConfig = enableFileConfig;
   }
 }

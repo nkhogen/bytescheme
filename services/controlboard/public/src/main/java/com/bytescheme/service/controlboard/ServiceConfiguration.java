@@ -46,8 +46,9 @@ public class ServiceConfiguration {
 
   @Bean
   public ConfigurationProvider configurationProvider() {
-    // return new DefaultConfigurationProvider(serviceProperties);
-    return new DynamoDBConfigurationProvider(
-        new DynamoDBMapper(AmazonDynamoDBClientBuilder.defaultClient()));
+    return serviceProperties.isEnableFileConfig()
+        ? new DefaultConfigurationProvider(serviceProperties)
+        : new DynamoDBConfigurationProvider(
+            new DynamoDBMapper(AmazonDynamoDBClientBuilder.defaultClient()));
   }
 }
