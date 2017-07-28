@@ -134,7 +134,7 @@ public class Controller implements Speechlet {
 
   // Finds the closest tag match in order.
   private DeviceStatus findClosestInOrder(List<DeviceStatus> devices, String searchWord) {
-    int maxMatchCount = Integer.MIN_VALUE;
+    int maxMatchCount = 1;
     DeviceStatus targetDevice = null;
     for (DeviceStatus device : devices) {
       String[] tagTokens = device.getTag().split("[ ]");
@@ -155,8 +155,8 @@ public class Controller implements Speechlet {
           index++;
         }
       }
-      if (maxMatchCount < matchCount && matchCount >= 2) {
-        matchCount = maxMatchCount;
+      if (maxMatchCount < matchCount) {
+        maxMatchCount = matchCount;
         targetDevice = device;
       }
     }
