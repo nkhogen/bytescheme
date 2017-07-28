@@ -64,13 +64,14 @@ public class Controller implements Speechlet {
     try {
       password = CryptoUtils.kmsEncrypt(userId);
     } catch (Exception e) {
-      return sendSpeechResponse("Key encryption failed " + e.getMessage());
+      LOG.info("Exception occurred in key encryption", e);
+      return sendSpeechResponse("Key encryption failed ");
     }
     try {
       client = clientBuilder.login(userId, password);
     } catch (Exception e) {
       LOG.info("Exception occurred in login", e);
-      return sendSpeechResponse("Login failed " + e.getMessage());
+      return sendSpeechResponse("Login failed ");
     }
     if (client == null) {
       return sendSpeechResponse("Login failed");
@@ -85,13 +86,7 @@ public class Controller implements Speechlet {
           return sendSpeechResponse("No controlboard found for the user");
         }
         List<DeviceStatus> devices = controlBoard.listDevices();
-        DeviceStatus targetDevice = null;
-        for (DeviceStatus deviceStatus : devices) {
-          if (deviceStatus.getTag().equalsIgnoreCase(deviceSlot.getValue())) {
-            targetDevice = deviceStatus;
-            break;
-          }
-        }
+        DeviceStatus targetDevice = findClosestInOrder(devices, deviceSlot.getValue());
         if (targetDevice == null) {
           return sendSpeechResponse("No target device found for the user");
         }
@@ -100,7 +95,8 @@ public class Controller implements Speechlet {
           targetDevice.setPowerOn(deviceStatus);
           controlBoard.changePowerStatus(targetDevice);
         }
-        return sendSpeechResponse("Device status is now " + deviceStatus);
+        return sendSpeechResponse(String.format("%s is now %s", targetDevice.getTag(),
+            deviceStatus ? "ON" : "OFF"));
       } else {
         throw new SpeechletException("Invalid Intent");
       }
@@ -134,5 +130,36 @@ public class Controller implements Speechlet {
     PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
     speech.setText(text);
     return SpeechletResponse.newTellResponse(speech, card);
+  }
+
+  // Finds the closest tag match in order.
+  private DeviceStatus findClosestInOrder(List<DeviceStatus> devices, String searchWord) {
+    int maxMatchCount = Integer.MIN_VALUE;
+    DeviceStatus targetDevice = null;
+    for (DeviceStatus device : devices) {
+      String[] tagTokens = device.getTag().split("[ ]");
+      String[] searchTokens = searchWord.split("[ ]");
+      int tagTokenPos = 0;
+      int matchCount = 0;
+      for (String searchToken : searchTokens) {
+        if (tagTokenPos >= tagTokens.length) {
+          break;
+        }
+        int index = tagTokenPos;
+        while (index < tagTokens.length) {
+          if (tagTokens[index].equalsIgnoreCase(searchToken)) {
+            matchCount++;
+            tagTokenPos = index + 1;
+            break;
+          }
+          index++;
+        }
+      }
+      if (maxMatchCount < matchCount && matchCount >= 2) {
+        matchCount = maxMatchCount;
+        targetDevice = device;
+      }
+    }
+    return targetDevice;
   }
 }

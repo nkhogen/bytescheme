@@ -1,2 +1,6 @@
+SetStatus power {STATUS} {DEVICE}
 SetStatus turn {STATUS} {DEVICE}
 SetStatus switch {STATUS} {DEVICE}
+SetStatus power {STATUS} the {DEVICE}
+SetStatus turn {STATUS} the {DEVICE}
+SetStatus switch {STATUS} the {DEVICE}
