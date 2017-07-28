@@ -27,11 +27,11 @@ public class RemoteObjectServer implements RemoteObjectListener {
   private final MessageCodec messageCodec = new MessageCodec(null, this);
   private final Map<UUID, RemoteObject> objectMap = new ConcurrentHashMap<>();
   private final Map<Class<? extends RemoteObject>, ClassMetaData> classMetaDataMap = new ConcurrentHashMap<>();
-  private final SecurityProvider[] securityProviders;
+  private final SecurityProvider securityProvider;
   private final boolean autoRegisterRemoteObject;
 
   public RemoteObjectServer() {
-    this(true, new SecurityProvider[0]);
+    this(true, null);
   }
 
   /**
@@ -41,8 +41,8 @@ public class RemoteObjectServer implements RemoteObjectListener {
    * @param securityProviders
    */
   public RemoteObjectServer(boolean autoRegisterRemoteObject,
-      SecurityProvider... securityProviders) {
-    this.securityProviders = securityProviders;
+      SecurityProvider securityProvider) {
+    this.securityProvider = securityProvider;
     this.autoRegisterRemoteObject = autoRegisterRemoteObject;
   }
 
@@ -103,22 +103,16 @@ public class RemoteObjectServer implements RemoteObjectListener {
         });
     try {
       Preconditions.checkNotNull(request);
-      if (securityProviders == null || securityProviders.length == 0) {
+      if (securityProvider == null) {
         LOG.info("Security provider not configured");
         return response;
       }
       Session session = null;
-      // Chain of security providers.
-      for (SecurityProvider securityProvider : securityProviders) {
-        try {
-          session = securityProvider
-              .authenticate(new Authentication(request.getUser(), request.getPassword()));
-          if (session != null) {
-            break;
-          }
-        } catch (Exception e) {
-          LOG.error("Error occurred in authentication", e);
-        }
+      try {
+        session = securityProvider
+            .authenticate(new Authentication(request.getUser(), request.getPassword()));
+      } catch (Exception e) {
+        LOG.error("Error occurred in authentication", e);
       }
       if (session == null) {
         throw new RemoteMethodCallException(Constants.AUTHENTICATION_ERROR_CODE,
@@ -150,14 +144,11 @@ public class RemoteObjectServer implements RemoteObjectListener {
         });
     try {
       Preconditions.checkNotNull(request);
-      if (securityProviders == null || securityProviders.length == 0) {
+      if (securityProvider == null) {
         LOG.info("Security provider not configured");
         return response;
       }
-      // Chain of security providers.
-      for (SecurityProvider securityProvider : securityProviders) {
-        securityProvider.destroySession(request.getSessionId());
-      }
+      securityProvider.destroySession(request.getSessionId());
       response.setReturnValue(request.getSessionId());
     } catch (RemoteMethodCallException e) {
       exception = e;
@@ -256,28 +247,23 @@ public class RemoteObjectServer implements RemoteObjectListener {
   }
 
   private void checkSecurity(MethodCallRequest request) {
-    if (securityProviders == null || securityProviders.length == 0) {
+    if (securityProvider == null) {
       LOG.info("Security provider not configured");
       return;
     }
     RemoteMethodCallException exception = null;
-    for (SecurityProvider securityProvider : securityProviders) {
-      try {
-        Authentication authentication = securityProvider.authenticate(request);
-        if (authentication == null) {
-          continue;
-        }
-        if (securityProvider.authorize(authentication, request)) {
-          return;
-        }
-      } catch (RemoteMethodCallException e) {
-        exception = e;
-      } catch (Exception e) {
-        String msg = String.format("Error occurred in security check for request ID %s",
-            request.getRequestId());
-        LOG.error(msg, e);
-        exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE, msg, e);
+    try {
+      Authentication authentication = securityProvider.authenticate(request);
+      if (securityProvider.authorize(authentication, request)) {
+        return;
       }
+    } catch (RemoteMethodCallException e) {
+      exception = e;
+    } catch (Exception e) {
+      String msg = String.format("Error occurred in security check for request ID %s",
+          request.getRequestId());
+      LOG.error(msg, e);
+      exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE, msg, e);
     }
     if (exception != null) {
       throw exception;

@@ -36,7 +36,7 @@ public class RemoteObjectClientBuilder {
       .getLogger(RemoteObjectClientBuilder.class);
   private static final String LOGIN_PATH = "/login";
   private static final String LOGOUT_PATH = "/logout";
-  private static final MessageCodec MESSAGE_CODEC = new MessageCodec(null, null);
+  private static final MessageCodec DEFAULT_MESSAGE_CODEC = new MessageCodec(null, null);
   private final URL loginUrl;
   private final URL logoutUrl;
   private final URL remoteObjectUrl;
@@ -61,6 +61,11 @@ public class RemoteObjectClientBuilder {
   }
 
   private <T> T invokeHttpPost(URL url, Object request, Class<T> responseClass) {
+    return invokeHttpPost(url, request, responseClass, DEFAULT_MESSAGE_CODEC);
+  }
+
+  private <T> T invokeHttpPost(URL url, Object request, Class<T> responseClass,
+      MessageCodec messageCodec) {
     CloseableHttpClient httpClient = null;
     try {
       SSLContext sslContext = new SSLContextBuilder()
@@ -68,7 +73,7 @@ public class RemoteObjectClientBuilder {
       httpClient = HttpClients.custom().setSSLContext(sslContext)
           .setSSLHostnameVerifier(new NoopHostnameVerifier()).build();
       LOG.info("Contacting url {}", url.toString());
-      StringEntity entity = new StringEntity(MESSAGE_CODEC.getJson(request));
+      StringEntity entity = new StringEntity(messageCodec.getJson(request));
       HttpPost httpPost = new HttpPost(url.toString());
       httpPost.setHeader("Accept", "application/json");
       httpPost.setHeader("Content-type", "application/json");
@@ -81,13 +86,13 @@ public class RemoteObjectClientBuilder {
       }
       String responseMessage = EntityUtils.toString(httpResponse.getEntity());
       LOG.info("Received server message: {}", responseMessage);
-      MethodCallResponse response = MESSAGE_CODEC.getObject(responseMessage,
+      MethodCallResponse response = messageCodec.getObject(responseMessage,
           MethodCallResponse.class);
       if (response.getException() != null) {
         LOG.error("Error occurred in method call", response.getException());
         throw response.getException();
       }
-      return MESSAGE_CODEC.getObject(response.getReturnValue(), responseClass);
+      return messageCodec.getObject(response.getReturnValue(), responseClass);
     } catch (RemoteMethodCallException e) {
       throw e;
     } catch (Exception e) {
@@ -141,7 +146,8 @@ public class RemoteObjectClientBuilder {
             LOG.info(
                 "Invoking remote method {}, parameter count {} on object ID {} with request ID {}",
                 request.getName(), parameterCount, objectId, request.getRequestId());
-            return invokeHttpPost(remoteObjectUrl, request, method.getReturnType());
+            return invokeHttpPost(remoteObjectUrl, request, method.getReturnType(),
+                messageCodec);
           }));
     }
 

@@ -1,0 +1,2 @@
+SetStatus turn {STATUS} {DEVICE}
+SetStatus switch {STATUS} {DEVICE}

@@ -67,7 +67,7 @@ resource "aws_instance" "controller" {
   security_groups = ["applications"]
   iam_instance_profile = "${aws_iam_instance_profile.controller-profile.name}"
   associate_public_ip_address = true
-
+  disable_api_termination = true
   provisioner "file" {
     source = "${path.module}/../../../target/bytescheme-controlboard-public-0.0.1-SNAPSHOT.jar"
     destination = "/controlboard/bin"
@@ -103,6 +103,16 @@ resource "aws_iam_role_policy" "controller-dynamodb-policy" {
             "${aws_dynamodb_table.controller-object-roles-table.arn}",
             "${aws_dynamodb_table.controller-endpoints-table.arn}"
          ]
+      },
+      {
+          "Effect": "Allow",
+          "Action": [
+             "kms:Decrypt",
+             "kms:Encrypt"
+          ],
+          "Resource": [
+             "*"
+          ]
       }
    ]
 }

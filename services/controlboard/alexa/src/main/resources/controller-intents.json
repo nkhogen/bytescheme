@@ -1,0 +1,17 @@
+{
+  "intents": [
+    {
+      "intent": "SetStatus",
+      "slots": [
+        {
+          "name": "STATUS",
+          "type": "LIST_OF_STATUS"
+        },
+        {
+          "name": "DEVICE",
+          "type": "LIST_OF_DEVICES"
+        }
+      ]
+    }
+  ]
+}

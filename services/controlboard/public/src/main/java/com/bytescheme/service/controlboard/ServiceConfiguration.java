@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.bytescheme.common.paths.PathProcessor;
 import com.bytescheme.rpc.core.RemoteObjectServer;
+import com.bytescheme.rpc.security.AWSAuthenticationProvider;
 import com.bytescheme.rpc.security.GoogleAuthenticationProvider;
 import com.bytescheme.rpc.security.SecurityProvider;
 import com.bytescheme.service.controlboard.domains.DynamoDBConfigurationProvider;
@@ -33,10 +34,12 @@ public class ServiceConfiguration {
     GoogleAuthenticationProvider googleAuthenticationProvider = new GoogleAuthenticationProvider(
         serviceProperties.getGoogleClientId(),
         configurationProvider.getAuthenticationDataProvider());
+    AWSAuthenticationProvider awsAuthenticationProvider = new AWSAuthenticationProvider(
+        configurationProvider.getAuthenticationDataProvider());
     PathProcessor pathProcessor = new PathProcessor(
         configurationProvider.getNodeProvider());
-    SecurityProvider securityProvider = new SecurityProvider(googleAuthenticationProvider,
-        pathProcessor);
+    SecurityProvider securityProvider = new SecurityProvider(pathProcessor,
+        googleAuthenticationProvider, awsAuthenticationProvider);
     RemoteObjectServer server = new RemoteObjectServer(true, securityProvider);
     RootImpl root = new RootImpl(configurationProvider.getObjectEndpointsProvider());
     root.setEnableMock(serviceProperties.isEnableMock());

@@ -19,6 +19,7 @@ import java.util.Base64.Encoder;
 
 import javax.crypto.Cipher;
 
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.DecryptRequest;
@@ -138,9 +139,7 @@ public class CryptoUtils {
 
   public static String kmsEncrypt(String plaintext) {
     checkNotNull(plaintext);
-    AWSKMS kmsClient = AWSKMSClientBuilder
-        .standard()
-        .withCredentials(Environment.DEFAULT.getAwsCredentialsProvider())
+    AWSKMS kmsClient = AWSKMSClientBuilder.standard().withRegion(Regions.US_WEST_1)
         .build();
     EncryptRequest request = new EncryptRequest();
     request.setKeyId(KEY_ALIAS_ARN);
@@ -155,9 +154,7 @@ public class CryptoUtils {
 
   public static String kmsDecrypt(String cipher) {
     checkNotNull(cipher);
-    AWSKMS kmsClient = AWSKMSClientBuilder
-        .standard()
-        .withCredentials(Environment.DEFAULT.getAwsCredentialsProvider())
+    AWSKMS kmsClient = AWSKMSClientBuilder.standard().withRegion(Regions.US_WEST_1)
         .build();
     DecryptRequest request = new DecryptRequest();
     ByteBuffer byteBuffer = ByteBuffer.wrap(DECODER.decode(cipher));

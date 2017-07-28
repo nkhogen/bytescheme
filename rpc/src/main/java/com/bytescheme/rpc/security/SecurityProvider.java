@@ -25,23 +25,32 @@ import com.google.common.collect.Sets;
 public class SecurityProvider {
   private static final Logger LOG = LoggerFactory.getLogger(SecurityProvider.class);
   private static final String AUTH_PATH = "%s:%d";
-  private final AuthenticationProvider authenticationProvider;
+  private final AuthenticationProvider[] authenticationProviders;
   private final PathProcessor pathProcessor;
 
-  public SecurityProvider(AuthenticationProvider authenticationProvider) {
-    this(authenticationProvider, null);
+  public SecurityProvider(AuthenticationProvider... authenticationProviders) {
+    this(null, authenticationProviders);
   }
 
-  public SecurityProvider(AuthenticationProvider authenticationProvider,
-      PathProcessor pathProcessor) {
-    Preconditions.checkNotNull(authenticationProvider);
-    this.authenticationProvider = authenticationProvider;
+  public SecurityProvider(PathProcessor pathProcessor,
+      AuthenticationProvider... authenticationProviders) {
+    Preconditions.checkNotNull(authenticationProviders);
     this.pathProcessor = pathProcessor;
+    this.authenticationProviders = authenticationProviders;
   }
 
   public Session authenticate(Authentication authentication) {
-    Authentication checkedAuthentication = authenticationProvider
-        .authenticate(authentication);
+    Authentication checkedAuthentication = null;
+    for (AuthenticationProvider authenticationProvider : authenticationProviders) {
+      try {
+        checkedAuthentication = authenticationProvider.authenticate(authentication);
+      } catch (Exception e) {
+        LOG.warn("Authentication failed. Trying the next authentication provider");
+      }
+      if (checkedAuthentication != null) {
+        break;
+      }
+    }
     if (checkedAuthentication == null) {
       String msg = String.format("Authentication failed for user %s",
           authentication.getUser());
@@ -63,15 +72,25 @@ public class SecurityProvider {
       LOG.info(msg);
       throw new RemoteMethodCallException(Constants.AUTHENTICATION_ERROR_CODE, msg);
     }
-    Authentication authentication = authenticationProvider
-        .authenticate(session.getAuthentication());
-    if (authentication == null) {
+    Authentication checkedAuthentication = null;
+    for (AuthenticationProvider authenticationProvider : authenticationProviders) {
+      try {
+        checkedAuthentication = authenticationProvider
+            .authenticate(session.getAuthentication());
+      } catch (Exception e) {
+        LOG.warn("Authentication failed. Trying the next authentication provider");
+      }
+      if (checkedAuthentication != null) {
+        break;
+      }
+    }
+    if (checkedAuthentication == null) {
       String msg = String.format("Session authentication failed for request ID %s",
           request.getRequestId());
       LOG.info(msg);
       throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE, msg);
     }
-    return authentication;
+    return checkedAuthentication;
   }
 
   public boolean authorize(Authentication authentication, MethodCallRequest request) {
