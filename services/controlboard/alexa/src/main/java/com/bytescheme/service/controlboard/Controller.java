@@ -91,10 +91,12 @@ public class Controller implements Speechlet {
           return sendSpeechResponse("No target device found for the user");
         }
         boolean deviceStatus = "ON".equalsIgnoreCase(statusSlot.getValue());
-        if (deviceStatus != targetDevice.isPowerOn()) {
-          targetDevice.setPowerOn(deviceStatus);
-          controlBoard.changePowerStatus(targetDevice);
+        if (deviceStatus == targetDevice.isPowerOn()) {
+          return sendSpeechResponse(String.format("%s is already %s",
+              targetDevice.getTag(), deviceStatus ? "ON" : "OFF"));
         }
+        targetDevice.setPowerOn(deviceStatus);
+        controlBoard.changePowerStatus(targetDevice);
         return sendSpeechResponse(String.format("%s is now %s", targetDevice.getTag(),
             deviceStatus ? "ON" : "OFF"));
       } else {
