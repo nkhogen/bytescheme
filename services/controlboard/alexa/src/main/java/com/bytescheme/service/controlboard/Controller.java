@@ -88,7 +88,8 @@ public class Controller implements Speechlet {
         List<DeviceStatus> devices = controlBoard.listDevices();
         DeviceStatus targetDevice = findClosestInOrder(devices, deviceSlot.getValue());
         if (targetDevice == null) {
-          return sendSpeechResponse("No target device found for the user");
+          return sendSpeechResponse(String.format("No target device %s found for the user",
+              deviceSlot.getValue()));
         }
         boolean deviceStatus = "ON".equalsIgnoreCase(statusSlot.getValue());
         if (deviceStatus == targetDevice.isPowerOn()) {
