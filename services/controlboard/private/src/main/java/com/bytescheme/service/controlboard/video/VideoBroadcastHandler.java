@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.UUID;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import com.bytescheme.common.utilities.CommandExecutor;
 import com.bytescheme.common.utilities.CommandInfoReader;
+import com.bytescheme.common.utils.BasicUtils;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -162,7 +162,7 @@ public class VideoBroadcastHandler {
   }
 
   protected String createSecret() {
-    return UUID.randomUUID().toString();
+    return BasicUtils.createSessionId();
   }
 
   private void start(boolean isWait) {

@@ -1,5 +1,7 @@
 package com.bytescheme.common.utils;
 
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +17,8 @@ import com.google.common.collect.Sets;
  *
  */
 public class BasicUtils {
+  private static final SecureRandom RANDOM = new SecureRandom();
+
   private BasicUtils() {
   }
 
@@ -59,4 +63,7 @@ public class BasicUtils {
     return copy;
   }
 
+  public static String createSessionId() {
+    return new BigInteger(500, RANDOM).toString(32);
+  }
 }

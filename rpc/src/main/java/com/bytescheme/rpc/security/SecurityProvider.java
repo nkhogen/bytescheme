@@ -1,13 +1,13 @@
 package com.bytescheme.rpc.security;
 
 import java.util.Set;
-import java.util.UUID;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.bytescheme.common.paths.PathProcessor;
+import com.bytescheme.common.utils.BasicUtils;
 import com.bytescheme.rpc.core.Constants;
 import com.bytescheme.rpc.core.MethodCallRequest;
 import com.bytescheme.rpc.core.RemoteMethodCallException;
@@ -127,6 +127,6 @@ public class SecurityProvider {
   }
 
   protected String createSessionId(String user) {
-    return UUID.randomUUID().toString();
+    return BasicUtils.createSessionId();
   }
 }
