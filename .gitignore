@@ -15,4 +15,5 @@ eclipse-classes
 # emacs backup files
 *~
 
-
+#terraform
+terraform.tfvars

@@ -38,7 +38,7 @@ import com.google.common.base.Strings;
  */
 public class CryptoUtils {
 
-  public static String KEY_ALIAS_ARN = "arn:aws:kms:us-west-1:284641886907:alias/password-secret";
+  public static String KEY_ALIAS = "alias/authentication-key";
 
   public static final Encoder ENCODER = Base64.getEncoder();
 
@@ -142,7 +142,7 @@ public class CryptoUtils {
     AWSKMS kmsClient = AWSKMSClientBuilder.standard().withRegion(Regions.US_WEST_1)
         .build();
     EncryptRequest request = new EncryptRequest();
-    request.setKeyId(KEY_ALIAS_ARN);
+    request.setKeyId(KEY_ALIAS);
     ByteBuffer byteBuffer = ByteBuffer.wrap(plaintext.getBytes());
     request.setPlaintext(byteBuffer);
     EncryptResult result = kmsClient.encrypt(request);

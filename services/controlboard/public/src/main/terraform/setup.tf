@@ -6,6 +6,12 @@ variable "region" {
 variable "account_id" {
 }
 
+variable "app_ids" {
+}
+
+variable "lambda_function_file" {
+  default = "../../../../alexa/target/original-bytescheme-controlboard-alexa-0.0.1-SNAPSHOT.jar"
+}
 variable "read_capacity" {
   default = 1
 }
@@ -18,6 +24,13 @@ variable "write_capacity" {
 provider "aws" {
   region                  = "${var.region}"
   profile                 = "default"
+}
+
+resource "aws_kms_key" "controller-kms-key" {}
+
+resource "aws_kms_alias" "controller-kms-alias" {
+  name          = "alias/authentication-key"
+  target_key_id = "${aws_kms_key.controller-kms-key.key_id}"
 }
 
 resource "aws_iam_instance_profile" "controller-profile" {
@@ -51,7 +64,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170619.1"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170721"]
   }
 
   filter {
@@ -60,19 +73,47 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+resource "aws_security_group" "controlboard-security-group" {
+  name        = "controlboard_security_group"
+  description = "Allow controlboard access"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_instance" "controller" {
   ami           = "${data.aws_ami.ubuntu.id}"
   instance_type = "t2.micro"
-  key_name = "controlboard-us-west-1"
-  security_groups = ["applications"]
+  key_name = "controlboard-${var.region}"
+  security_groups = ["${aws_security_group.controlboard-security-group.name}"]
   iam_instance_profile = "${aws_iam_instance_profile.controller-profile.name}"
   associate_public_ip_address = true
   disable_api_termination = true
-  provisioner "file" {
-    source = "${path.module}/../../../target/bytescheme-controlboard-public-0.0.1-SNAPSHOT.jar"
-    destination = "/controlboard/bin"
-  }
-
   tags {
     Name = "controller"
   }
@@ -117,6 +158,83 @@ resource "aws_iam_role_policy" "controller-dynamodb-policy" {
    ]
 }
 EOF
+}
+
+resource "aws_iam_role" "controller-lambda-role" {
+  name = "alexa_controller_lambda_role"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "controller-lambda-policy" {
+    name = "alexa_controller_lambda_policy"
+    role = "${aws_iam_role.controller-lambda-role.id}"
+    policy = <<EOF
+{
+   "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "arn:aws:logs:${var.account_id}::*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kms:Decrypt",
+                "kms:Encrypt"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_cloudwatch_log_group" "controller-log-group" {
+  name = "/aws/lambda/controller"
+  retention_in_days = 1
+}
+
+resource "aws_lambda_permission" "controller-alexa" {
+  statement_id  = "AllowExecutionFromAlexa"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.controller-lambda.function_name}"
+  principal     = "alexa-appkit.amazon.com"
+}
+
+resource "aws_lambda_function" "controller-lambda" {
+  filename         = "${path.module}/${var.lambda_function_file}"
+  function_name    = "controller"
+  role             = "${aws_iam_role.controller-lambda-role.arn}"
+  handler          = "com.bytescheme.service.controlboard.ControllerSpeechletRequestStreamHandler"
+  source_code_hash = "${base64sha256(file("${path.module}/${var.lambda_function_file}"))}"
+  runtime          = "java8"
+
+  environment {
+    variables = {
+      APP_IDS = "${var.app_ids}"
+    }
+  }
 }
 
 resource "aws_dynamodb_table" "controller-user-roles-table" {
