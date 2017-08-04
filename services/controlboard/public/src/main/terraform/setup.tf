@@ -22,8 +22,14 @@ variable "write_capacity" {
 
 # Provider
 provider "aws" {
-  region                  = "${var.region}"
-  profile                 = "default"
+  region  = "${var.region}"
+  profile = "default"
+}
+
+# Alexa in east only
+provider "aws" {
+  alias  = "east"
+  region = "us-east-1"
 }
 
 resource "aws_kms_key" "controller-kms-key" {}
@@ -211,11 +217,13 @@ EOF
 }
 
 resource "aws_cloudwatch_log_group" "controller-log-group" {
+  provider = "aws.east"
   name = "/aws/lambda/controller"
   retention_in_days = 1
 }
 
 resource "aws_lambda_permission" "controller-alexa" {
+  provider      = "aws.east"
   statement_id  = "AllowExecutionFromAlexa"
   action        = "lambda:InvokeFunction"
   function_name = "${aws_lambda_function.controller-lambda.function_name}"
@@ -223,6 +231,7 @@ resource "aws_lambda_permission" "controller-alexa" {
 }
 
 resource "aws_lambda_function" "controller-lambda" {
+  provider         = "aws.east"
   filename         = "${path.module}/${var.lambda_function_file}"
   function_name    = "controller"
   role             = "${aws_iam_role.controller-lambda-role.arn}"
