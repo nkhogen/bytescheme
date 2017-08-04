@@ -10,7 +10,7 @@ variable "app_ids" {
 }
 
 variable "lambda_function_file" {
-  default = "../../../../alexa/target/original-bytescheme-controlboard-alexa-0.0.1-SNAPSHOT.jar"
+  default = "../../../../alexa/target/bytescheme-controlboard-alexa-0.0.1-SNAPSHOT.jar"
 }
 variable "read_capacity" {
   default = 1
@@ -199,7 +199,7 @@ resource "aws_iam_role_policy" "controller-lambda-policy" {
                 "logs:CreateLogStream",
                 "logs:PutLogEvents"
             ],
-            "Resource": "arn:aws:logs:${var.account_id}::*"
+            "Resource": "arn:aws:logs:*:*:*"
         },
         {
             "Effect": "Allow",
@@ -238,7 +238,8 @@ resource "aws_lambda_function" "controller-lambda" {
   handler          = "com.bytescheme.service.controlboard.ControllerSpeechletRequestStreamHandler"
   source_code_hash = "${base64sha256(file("${path.module}/${var.lambda_function_file}"))}"
   runtime          = "java8"
-
+  timeout          = 60
+  memory_size      = 512
   environment {
     variables = {
       APP_IDS = "${var.app_ids}"
