@@ -39,6 +39,7 @@
     <module>rpc</module>
     <module>tools</module>
     <module>utilities</module>
+    <module>proto</module>
   </modules>
   <dependencyManagement>
     <dependencies>
