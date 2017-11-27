@@ -8,7 +8,7 @@
   <url>http://maven.apache.org</url>
   <parent>
     <groupId>com.bytescheme.services</groupId>
-    <artifactId>bytescheme-controlboard-parent</artifactId>
+    <artifactId>bytescheme-services-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <properties>
