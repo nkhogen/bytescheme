@@ -15,5 +15,6 @@
   </properties>
   <modules>
     <module>swagger</module>
+    <module>codegen</module>
   </modules>
 </project>
