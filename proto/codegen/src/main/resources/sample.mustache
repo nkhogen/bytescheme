@@ -1,0 +1,12 @@
+package {{packageName}};
+
+public class {{className}}Impl implements {{packageName}}.{{className}} {
+{{#methodDefinitions}}
+  public {{returnType}} {{methodName}}({{parameters}}) {
+    {{#isReturn}}
+      {{! primitives break the code }}
+      return null;
+    {{/isReturn}}
+  }
+ {{/methodDefinitions}}
+}
