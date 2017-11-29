@@ -2,7 +2,6 @@ package com.bytescheme.proto.codegen.compiler;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +13,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
@@ -22,7 +20,6 @@ import javax.lang.model.util.Types;
 import javax.tools.JavaFileObject;
 
 import com.bytescheme.proto.codegen.compiler.ClassDefinition.MethodDefinition;
-import com.squareup.javawriter.JavaWriter;
 
 @SuppressWarnings("unused")
 @SupportedAnnotationTypes({ "com.bytescheme.proto.codegen.compiler.annotations.*" })
