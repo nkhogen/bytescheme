@@ -12,6 +12,7 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 
 public class CodeGenerator {
+  // Velocity or Free Marker supports variable checks and are better.
   private static final MustacheFactory MUSTACHE_FACTORY = new DefaultMustacheFactory();
   private Mustache mustache;
 
