@@ -21,6 +21,7 @@ public class GrpcClientRequestHandler implements ClientRequestHandler {
   private final ServiceGrpc.ServiceBlockingStub blockingStub;
 
   public GrpcClientRequestHandler(String host, int port) {
+    // Just a demo with plaintext.
     channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
     blockingStub = ServiceGrpc.newBlockingStub(channel);
   }

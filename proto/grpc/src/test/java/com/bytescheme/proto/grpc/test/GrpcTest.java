@@ -20,8 +20,20 @@ public class GrpcTest {
 
   private GrpcRemoteObjectServer server;
 
+  public static class Data {
+    public int i;
+    public String s;
+
+    @Override
+    public String toString() {
+      return s + "=" + i;
+    }
+  }
+
   public static interface MyService extends RemoteObject {
     String hello();
+
+    Data getData(int i);
   }
 
   public static class MyServiceImpl implements MyService {
@@ -40,6 +52,14 @@ public class GrpcTest {
     @Override
     public String hello() {
       return "Hello!How are you?";
+    }
+
+    @Override
+    public Data getData(int i) {
+      Data data = new Data();
+      data.i = i + 10;
+      data.s = "FIELD_VALUE";
+      return data;
     }
 
   }
@@ -66,5 +86,8 @@ public class GrpcTest {
     String message = myService.hello();
     assertEquals(message, new MyServiceImpl(new UUID(0L, 1L)).hello());
     System.out.println(message);
+    Data data = myService.getData(10);
+    assertEquals(data.toString(), "FIELD_VALUE=20");
+    System.out.println(data);
   }
 }
