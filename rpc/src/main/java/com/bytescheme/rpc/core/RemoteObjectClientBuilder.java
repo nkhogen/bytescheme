@@ -56,7 +56,6 @@ public class RemoteObjectClientBuilder {
     } catch (RemoteMethodCallException e) {
       throw e;
     } catch (Exception e) {
-      e.printStackTrace();
       throw new RemoteMethodCallException(Constants.CLIENT_ERROR_CODE, "Error occurred in client",
           e);
     }

@@ -23,6 +23,7 @@ import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
 import com.bytescheme.service.controlboard.common.remoteobjects.BaseMockControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
+import com.bytescheme.service.controlboard.domains.ObjectEndpoint;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;

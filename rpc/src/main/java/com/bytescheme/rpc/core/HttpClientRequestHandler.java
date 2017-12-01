@@ -43,6 +43,7 @@ public class HttpClientRequestHandler implements ClientRequestHandler {
     this.logoutUrl = new URL(url + LOGOUT_PATH);
     this.remoteObjectUrl = new URL(url);
   }
+
   @Override
   public MethodCallResponse invoke(RemoteCallRequest request, MessageCodec messageCodec) {
     CloseableHttpClient httpClient = null;
@@ -71,9 +72,7 @@ public class HttpClientRequestHandler implements ClientRequestHandler {
       }
       String responseMessage = EntityUtils.toString(httpResponse.getEntity());
       LOG.info("Received server message: {}", responseMessage);
-      MethodCallResponse response = messageCodec.getObject(responseMessage,
-          MethodCallResponse.class);
-      return response;
+      return messageCodec.getObject(responseMessage, MethodCallResponse.class);
     } catch (Exception e) {
       throw new RemoteMethodCallException(Constants.CLIENT_ERROR_CODE, "Error occurred in client",
           e);

@@ -8,8 +8,8 @@ import com.bytescheme.common.properties.FilePropertyChangePublisher;
 import com.bytescheme.common.properties.PropertyChangePublisher;
 import com.bytescheme.rpc.security.AuthData;
 import com.bytescheme.rpc.security.DefaultAuthenticationDataProvider;
+import com.bytescheme.service.controlboard.domains.ObjectEndpoint;
 import com.bytescheme.service.controlboard.remoteobjects.DefaultObjectEndpointsProvider;
-import com.bytescheme.service.controlboard.remoteobjects.ObjectEndpoint;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.common.base.Function;
 

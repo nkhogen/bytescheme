@@ -1,4 +1,4 @@
-package com.bytescheme.service.controlboard.remoteobjects;
+package com.bytescheme.service.controlboard.domains;
 
 import java.security.PublicKey;
 

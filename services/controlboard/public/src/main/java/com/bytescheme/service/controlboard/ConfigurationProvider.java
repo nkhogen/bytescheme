@@ -4,7 +4,7 @@ import java.util.Set;
 
 import com.bytescheme.common.paths.Node;
 import com.bytescheme.rpc.security.AuthData;
-import com.bytescheme.service.controlboard.remoteobjects.ObjectEndpoint;
+import com.bytescheme.service.controlboard.domains.ObjectEndpoint;
 import com.google.common.base.Function;
 
 /**

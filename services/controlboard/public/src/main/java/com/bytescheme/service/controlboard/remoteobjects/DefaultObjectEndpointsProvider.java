@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.collections4.MapUtils;
 
 import com.bytescheme.common.utils.CryptoUtils;
+import com.bytescheme.service.controlboard.domains.ObjectEndpoint;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
