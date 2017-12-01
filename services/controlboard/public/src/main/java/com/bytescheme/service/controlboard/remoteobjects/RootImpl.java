@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.core.Constants;
+import com.bytescheme.rpc.core.HttpClientRequestHandler;
 import com.bytescheme.rpc.core.RemoteMethodCallException;
 import com.bytescheme.rpc.core.RemoteObject;
 import com.bytescheme.rpc.core.RemoteObjectClient;
@@ -88,8 +89,8 @@ public class RootImpl implements Root {
 
   private <T extends RemoteObject> T createRemoteObject(Class<T> clazz, UUID objectId,
       String endpoint, PublicKey publicKey) {
-    return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(),
-        new Class<?>[] { clazz }, (proxy, method, args) -> {
+    return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { clazz },
+        (proxy, method, args) -> {
           return invokeMethod(clazz, objectId, method, args, endpoint, publicKey);
         }));
   }
@@ -98,9 +99,8 @@ public class RootImpl implements Root {
    * This method takes care of auto-login in case of session expiry under the
    * hood when a method of the remote object is invoked.
    */
-  private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId,
-      Method method, Object[] args, String endpoint, PublicKey publicKey)
-      throws MalformedURLException {
+  private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId, Method method,
+      Object[] args, String endpoint, PublicKey publicKey) throws MalformedURLException {
     int retry = 0;
     int parameterCount = (args == null) ? 0 : 1;
     do {
@@ -113,9 +113,8 @@ public class RootImpl implements Root {
           client = clients.get(endpoint);
           if (client == null) {
             RemoteObjectClientBuilder clientBuilder = new RemoteObjectClientBuilder(
-                endpoint);
-            client = clientBuilder.login(TARGET_USER,
-                CryptoUtils.encrypt(TARGET_USER, publicKey));
+                new HttpClientRequestHandler(endpoint));
+            client = clientBuilder.login(TARGET_USER, CryptoUtils.encrypt(TARGET_USER, publicKey));
             clients.put(endpoint, client);
           }
         }
@@ -164,9 +163,8 @@ public class RootImpl implements Root {
       }
     } while (retry < CLIENT_RETRY_LIMIT);
     if (retry == 0) {
-      throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
-          String.format("Method %s:%d not found in class %s", method.getName(),
-              parameterCount, clazz.getName()));
+      throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE, String.format(
+          "Method %s:%d not found in class %s", method.getName(), parameterCount, clazz.getName()));
     }
     throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
         "Retry limit exceeded in client call");

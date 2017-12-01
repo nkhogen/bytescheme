@@ -1,22 +1,8 @@
 package com.bytescheme.rpc.core;
 
 import java.lang.reflect.Proxy;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.UUID;
 
-import javax.net.ssl.SSLContext;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,20 +18,18 @@ import com.google.common.base.Strings;
  *
  */
 public class RemoteObjectClientBuilder {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(RemoteObjectClientBuilder.class);
-  private static final String LOGIN_PATH = "/login";
-  private static final String LOGOUT_PATH = "/logout";
+  private static final Logger LOG = LoggerFactory.getLogger(RemoteObjectClientBuilder.class);
   private static final MessageCodec DEFAULT_MESSAGE_CODEC = new MessageCodec(null, null);
-  private final URL loginUrl;
-  private final URL logoutUrl;
-  private final URL remoteObjectUrl;
 
-  public RemoteObjectClientBuilder(String url) throws MalformedURLException {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(url), "Invalid URL");
-    this.loginUrl = new URL(url + LOGIN_PATH);
-    this.logoutUrl = new URL(url + LOGOUT_PATH);
-    this.remoteObjectUrl = new URL(url);
+  private final ClientRequestHandler clientRequestHandler;
+
+  /**
+   * Constructs an instance with the request handler.
+   *
+   * @param clientRequestHandler
+   */
+  public RemoteObjectClientBuilder(ClientRequestHandler clientRequestHandler) {
+    this.clientRequestHandler = Preconditions.checkNotNull(clientRequestHandler);
   }
 
   public RemoteObjectClient login(String user, String password) {
@@ -56,38 +40,14 @@ public class RemoteObjectClientBuilder {
     request.setRequestId(UUID.randomUUID());
     LOG.info("Invoking login method {} with user {} and request ID {}", request.getUser(),
         request.getRequestId());
-    String sessionId = invokeHttpPost(loginUrl, request, String.class);
+    String sessionId = invokeRemoteMethod(request, String.class, DEFAULT_MESSAGE_CODEC);
     return new ClientRemoteObjectFactory(sessionId);
   }
 
-  private <T> T invokeHttpPost(URL url, Object request, Class<T> responseClass) {
-    return invokeHttpPost(url, request, responseClass, DEFAULT_MESSAGE_CODEC);
-  }
-
-  private <T> T invokeHttpPost(URL url, Object request, Class<T> responseClass,
+  private <T, R extends RemoteCallRequest> T invokeRemoteMethod(R request, Class<T> responseClass,
       MessageCodec messageCodec) {
-    CloseableHttpClient httpClient = null;
     try {
-      SSLContext sslContext = new SSLContextBuilder()
-          .loadTrustMaterial(null, (certificate, authType) -> true).build();
-      httpClient = HttpClients.custom().setSSLContext(sslContext)
-          .setSSLHostnameVerifier(new NoopHostnameVerifier()).build();
-      LOG.info("Contacting url {}", url.toString());
-      StringEntity entity = new StringEntity(messageCodec.getJson(request));
-      HttpPost httpPost = new HttpPost(url.toString());
-      httpPost.setHeader("Accept", "application/json");
-      httpPost.setHeader("Content-type", "application/json");
-      httpPost.setEntity(entity);
-      CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
-      int statusCode = httpResponse.getStatusLine().getStatusCode();
-      if (statusCode != HttpStatus.SC_OK) {
-        throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
-            String.format("Response %d is not OK ", statusCode));
-      }
-      String responseMessage = EntityUtils.toString(httpResponse.getEntity());
-      LOG.info("Received server message: {}", responseMessage);
-      MethodCallResponse response = messageCodec.getObject(responseMessage,
-          MethodCallResponse.class);
+      MethodCallResponse response = clientRequestHandler.invoke(request, messageCodec);
       if (response.getException() != null) {
         LOG.error("Error occurred in method call", response.getException());
         throw response.getException();
@@ -96,10 +56,9 @@ public class RemoteObjectClientBuilder {
     } catch (RemoteMethodCallException e) {
       throw e;
     } catch (Exception e) {
-      throw new RemoteMethodCallException(Constants.CLIENT_ERROR_CODE,
-          "Error occurred in client", e);
-    } finally {
-      IOUtils.closeQuietly(httpClient);
+      e.printStackTrace();
+      throw new RemoteMethodCallException(Constants.CLIENT_ERROR_CODE, "Error occurred in client",
+          e);
     }
   }
 
@@ -115,8 +74,7 @@ public class RemoteObjectClientBuilder {
     public <T extends RemoteObject> T createRemoteObject(Class<T> clazz, UUID objectId) {
       return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(),
           new Class<?>[] { clazz }, (proxy, method, args) -> {
-            if (method.getName().equals("getObjectId")
-                && method.getParameterCount() == 0) {
+            if (method.getName().equals("getObjectId") && method.getParameterCount() == 0) {
               return objectId;
             }
             if (method.getName().equals("equals") && method.getParameterCount() == 1) {
@@ -146,8 +104,7 @@ public class RemoteObjectClientBuilder {
             LOG.info(
                 "Invoking remote method {}, parameter count {} on object ID {} with request ID {}",
                 request.getName(), parameterCount, objectId, request.getRequestId());
-            return invokeHttpPost(remoteObjectUrl, request, method.getReturnType(),
-                messageCodec);
+            return invokeRemoteMethod(request, method.getReturnType(), messageCodec);
           }));
     }
 
@@ -158,7 +115,7 @@ public class RemoteObjectClientBuilder {
       request.setRequestId(UUID.randomUUID());
       LOG.info("Invoking logout method {} with session ID %s and request ID {}",
           request.getSessionId(), request.getRequestId());
-      invokeHttpPost(logoutUrl, request, String.class);
+      invokeRemoteMethod(request, String.class, DEFAULT_MESSAGE_CODEC);
     }
   }
 }

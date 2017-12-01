@@ -1,6 +1,5 @@
 package com.bytescheme.rpc.core;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -9,7 +8,7 @@ import java.util.UUID;
  * @author Naorem Khogendro Singh
  *
  */
-public class LogoutCallRequest implements Serializable {
+public class LogoutCallRequest implements RemoteCallRequest {
   private static final long serialVersionUID = 1L;
   private String sessionId;
   private UUID requestId;
@@ -22,6 +21,7 @@ public class LogoutCallRequest implements Serializable {
     this.sessionId = sessionId;
   }
 
+  @Override
   public UUID getRequestId() {
     return requestId;
   }

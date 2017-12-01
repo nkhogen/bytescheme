@@ -21,6 +21,7 @@ import com.amazon.speech.speechlet.User;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.SimpleCard;
 import com.bytescheme.common.utils.CryptoUtils;
+import com.bytescheme.rpc.core.HttpClientRequestHandler;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
 import com.bytescheme.service.controlboard.common.models.DeviceStatus;
@@ -42,7 +43,7 @@ public class Controller implements Speechlet {
 
   public Controller() {
     try {
-      this.clientBuilder = new RemoteObjectClientBuilder(ENDPOINT);
+      this.clientBuilder = new RemoteObjectClientBuilder(new HttpClientRequestHandler(ENDPOINT));
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
@@ -51,8 +52,7 @@ public class Controller implements Speechlet {
   @Override
   public SpeechletResponse onIntent(IntentRequest request, Session session)
       throws SpeechletException {
-    LOG.info("onIntent requestId={}, sessionId={}", request.getRequestId(),
-        session.getSessionId());
+    LOG.info("onIntent requestId={}, sessionId={}", request.getRequestId(), session.getSessionId());
 
     Intent intent = request.getIntent();
     String intentName = (intent != null) ? intent.getName() : null;
@@ -88,18 +88,18 @@ public class Controller implements Speechlet {
         List<DeviceStatus> devices = controlBoard.listDevices();
         DeviceStatus targetDevice = findClosestInOrder(devices, deviceSlot.getValue());
         if (targetDevice == null) {
-          return sendSpeechResponse(String.format("No target device %s found for the user",
-              deviceSlot.getValue()));
+          return sendSpeechResponse(
+              String.format("No target device %s found for the user", deviceSlot.getValue()));
         }
         boolean deviceStatus = "ON".equalsIgnoreCase(statusSlot.getValue());
         if (deviceStatus == targetDevice.isPowerOn()) {
-          return sendSpeechResponse(String.format("%s is already %s",
-              targetDevice.getTag(), deviceStatus ? "ON" : "OFF"));
+          return sendSpeechResponse(String.format("%s is already %s", targetDevice.getTag(),
+              deviceStatus ? "ON" : "OFF"));
         }
         targetDevice.setPowerOn(deviceStatus);
         controlBoard.changePowerStatus(targetDevice);
-        return sendSpeechResponse(String.format("%s is now %s", targetDevice.getTag(),
-            deviceStatus ? "ON" : "OFF"));
+        return sendSpeechResponse(
+            String.format("%s is now %s", targetDevice.getTag(), deviceStatus ? "ON" : "OFF"));
       } else {
         throw new SpeechletException("Invalid Intent");
       }
@@ -120,8 +120,8 @@ public class Controller implements Speechlet {
   }
 
   @Override
-  public void onSessionStarted(SessionStartedRequest sessionStartedRequest,
-      Session session) throws SpeechletException {
+  public void onSessionStarted(SessionStartedRequest sessionStartedRequest, Session session)
+      throws SpeechletException {
   }
 
   private SpeechletResponse sendSpeechResponse(String text) {

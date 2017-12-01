@@ -16,5 +16,6 @@
   <modules>
     <module>swagger</module>
     <module>codegen</module>
-  </modules>
+    <module>grpc</module>
+	</modules>
 </project>

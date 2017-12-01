@@ -1,0 +1,37 @@
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.bytescheme.proto.grpc";
+option java_outer_classname = "RpcService";
+
+// The greeting service definition.
+service Service {
+  // Sends a greeting
+  rpc login (LoginCallRequest) returns (MethodCallResponse) {}
+  rpc logout (LogoutCallRequest) returns (MethodCallResponse) {}
+  rpc invoke (MethodCallRequest) returns (MethodCallResponse) {}
+}
+
+message LoginCallRequest {
+  string user = 1;
+  string password = 2;
+  string requestId = 3;
+}
+
+message LogoutCallRequest {
+  string sessionId = 1;
+  string requestId = 2;
+}
+
+message MethodCallRequest {
+  string objectId = 1;
+  string name = 2;
+  string sessionId = 3;
+  string requestId = 4;
+  repeated string parameters = 5;
+}
+
+message MethodCallResponse {
+  string returnValue = 1;
+}

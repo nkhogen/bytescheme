@@ -16,26 +16,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.bytescheme</groupId>
-      <artifactId>bytescheme-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.github.spullara.mustache.java</groupId>
       <artifactId>compiler</artifactId>
-      <version>0.9.5</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
     </dependency>
   </dependencies>
 
@@ -44,10 +26,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
+        <version>${maven-compiler-plugin.version}</version>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>${java-compiler.version}</source>
+          <target>${java-compiler.version}</target>
         </configuration>
         <executions>
           <execution>

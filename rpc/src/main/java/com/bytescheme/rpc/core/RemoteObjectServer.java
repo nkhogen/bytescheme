@@ -40,8 +40,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
    * @param autoRegisterRemoteObject
    * @param securityProviders
    */
-  public RemoteObjectServer(boolean autoRegisterRemoteObject,
-      SecurityProvider securityProvider) {
+  public RemoteObjectServer(boolean autoRegisterRemoteObject, SecurityProvider securityProvider) {
     this.securityProvider = securityProvider;
     this.autoRegisterRemoteObject = autoRegisterRemoteObject;
   }
@@ -97,10 +96,9 @@ public class RemoteObjectServer implements RemoteObjectListener {
   public MethodCallResponse login(LoginCallRequest request) {
     RemoteMethodCallException exception = null;
     MethodCallResponse response = new MethodCallResponse();
-    MethodCallRecorder.init(request.getRequestId(),
-        (requestId, elapsedTime, methodTime) -> {
-          LOG.info(Constants.METHOD_ENTER_LOG_FORMAT, requestId, "login", elapsedTime);
-        });
+    MethodCallRecorder.init(request.getRequestId(), (requestId, elapsedTime, methodTime) -> {
+      LOG.info(Constants.METHOD_ENTER_LOG_FORMAT, requestId, "login", elapsedTime);
+    });
     try {
       Preconditions.checkNotNull(request);
       if (securityProvider == null) {
@@ -127,8 +125,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
           "Error occurred in login", e);
     } finally {
       MethodCallRecorder.uninit((requestId, elapsedTime, methodTime) -> {
-        LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "login", elapsedTime,
-            methodTime);
+        LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "login", elapsedTime, methodTime);
       });
     }
     response.setException(exception);
@@ -138,10 +135,9 @@ public class RemoteObjectServer implements RemoteObjectListener {
   public MethodCallResponse logout(LogoutCallRequest request) {
     RemoteMethodCallException exception = null;
     MethodCallResponse response = new MethodCallResponse();
-    MethodCallRecorder.init(request.getRequestId(),
-        (requestId, elapsedTime, methodTime) -> {
-          LOG.info(Constants.METHOD_ENTER_LOG_FORMAT, requestId, "logout", elapsedTime);
-        });
+    MethodCallRecorder.init(request.getRequestId(), (requestId, elapsedTime, methodTime) -> {
+      LOG.info(Constants.METHOD_ENTER_LOG_FORMAT, requestId, "logout", elapsedTime);
+    });
     try {
       Preconditions.checkNotNull(request);
       if (securityProvider == null) {
@@ -158,8 +154,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
           "Error occurred in logout", e);
     } finally {
       MethodCallRecorder.uninit((requestId, elapsedTime, methodTime) -> {
-        LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "logout", elapsedTime,
-            methodTime);
+        LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "logout", elapsedTime, methodTime);
       });
     }
     response.setException(exception);
@@ -169,10 +164,9 @@ public class RemoteObjectServer implements RemoteObjectListener {
   public MethodCallResponse process(MethodCallRequest request) {
     RemoteMethodCallException exception = null;
     MethodCallResponse response = new MethodCallResponse();
-    MethodCallRecorder.init(request.getRequestId(),
-        (requestId, elapsedTime, methodTime) -> {
-          LOG.info(Constants.METHOD_ENTER_LOG_FORMAT, requestId, "process", elapsedTime);
-        });
+    MethodCallRecorder.init(request.getRequestId(), (requestId, elapsedTime, methodTime) -> {
+      LOG.info(Constants.METHOD_ENTER_LOG_FORMAT, requestId, "process", elapsedTime);
+    });
     boolean isAutoRegistered = false;
     try {
       Preconditions.checkNotNull(request);
@@ -231,8 +225,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
         unregister(request.getObjectId());
       }
       MethodCallRecorder.uninit((requestId, elapsedTime, methodTime) -> {
-        LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "process", elapsedTime,
-            methodTime);
+        LOG.info(Constants.METHOD_EXIT_LOG_FORMAT, requestId, "process", elapsedTime, methodTime);
       });
     }
     response.setException(exception);
@@ -268,8 +261,7 @@ public class RemoteObjectServer implements RemoteObjectListener {
     if (exception != null) {
       throw exception;
     }
-    throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE,
-        "Unauthorized user");
+    throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE, "Unauthorized user");
   }
 
   private class ClassMetaData {
