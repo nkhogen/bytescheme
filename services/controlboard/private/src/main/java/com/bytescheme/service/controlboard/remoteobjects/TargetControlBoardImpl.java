@@ -1,24 +1,20 @@
 package com.bytescheme.service.controlboard.remoteobjects;
 
-import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.MapUtils;
 
+import com.bytescheme.common.sockets.SimpleEventServer;
 import com.bytescheme.service.controlboard.common.models.DeviceStatus;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
-import com.bytescheme.service.controlboard.gpio.GpioUtils;
+import com.bytescheme.service.controlboard.device.DeviceController;
 import com.bytescheme.service.controlboard.video.VideoBroadcastHandler;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.api.client.repackaged.com.google.common.base.Strings;
-import com.pi4j.io.gpio.GpioController;
-import com.pi4j.io.gpio.GpioFactory;
-import com.pi4j.io.gpio.GpioPinDigitalOutput;
-import com.pi4j.io.gpio.PinState;
 
 /**
  * Actual communication with the Raspberry pi happens here.
@@ -29,30 +25,42 @@ import com.pi4j.io.gpio.PinState;
  * @author Naorem Khogendro Singh
  *
  */
+@SuppressWarnings("unused")
 public class TargetControlBoardImpl implements ControlBoard {
   private static final long serialVersionUID = 1L;
   private final UUID objectId;
-  private final GpioController gpio;
   private final String videoUrlFormat;
-  private final Map<Integer, SimpleEntry<DeviceStatus, GpioPinDigitalOutput>> devicesMap = new HashMap<>();
+  private final SimpleEventServer eventServer;
+  private final Map<Integer, DeviceController> devicesControllers = new HashMap<>();
 
-  public TargetControlBoardImpl(UUID objectId, Map<Integer, String> tags,
-      String videoUrlFormat) {
+  public TargetControlBoardImpl(UUID objectId, Map<String, Map<Integer, String>> devices,
+      String videoUrlFormat, SimpleEventServer eventServer) {
     Preconditions.checkNotNull(objectId, "Invalid object ID");
-    Preconditions.checkNotNull(MapUtils.isEmpty(tags), "Invalid tags");
-    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat),
-        "Invalid video URL format");
+    Preconditions.checkNotNull(MapUtils.isEmpty(devices), "Invalid tags");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat), "Invalid video URL format");
     this.objectId = objectId;
     this.videoUrlFormat = videoUrlFormat;
-    this.gpio = GpioFactory.getInstance();
-    for (Map.Entry<Integer, String> tagEntry : tags.entrySet()) {
-      DeviceStatus device = new DeviceStatus();
-      device.setPin(tagEntry.getKey());
-      device.setTag(tagEntry.getValue());
-      GpioPinDigitalOutput pin = gpio
-          .provisionDigitalOutputPin(GpioUtils.getRaspiPin(tagEntry.getKey()));
-      devicesMap.put(tagEntry.getKey(), new SimpleEntry<>(device, pin));
-    }
+    this.eventServer = eventServer;
+    devices.entrySet().stream().forEach(e -> {
+      if (e.getKey().equals("0")) {
+        e.getValue().entrySet().forEach(d -> {
+          DeviceStatus device = new DeviceStatus();
+          device.setPin(d.getKey());
+          device.setTag(d.getValue());
+          Preconditions.checkArgument(
+              devicesControllers.put(d.getKey(), new DeviceController(device)) == null);
+        });
+      } else {
+        UUID controllerNodeId = UUID.fromString(e.getKey());
+        e.getValue().entrySet().forEach(d -> {
+          DeviceStatus device = new DeviceStatus();
+          device.setPin(d.getKey());
+          device.setTag(d.getValue());
+          Preconditions.checkArgument(devicesControllers.put(d.getKey(),
+              new DeviceController(device, controllerNodeId, eventServer)) == null);
+        });
+      }
+    });
   }
 
   @Override
@@ -62,31 +70,19 @@ public class TargetControlBoardImpl implements ControlBoard {
 
   @Override
   public List<DeviceStatus> listDevices() {
-    List<DeviceStatus> devices = new LinkedList<DeviceStatus>();
-    for (Map.Entry<Integer, SimpleEntry<DeviceStatus, GpioPinDigitalOutput>> deviceEntry : devicesMap
-        .entrySet()) {
-      DeviceStatus device = deviceEntry.getValue().getKey();
-      GpioPinDigitalOutput pin = deviceEntry.getValue().getValue();
-      device.setPowerOn(pin.getState() == PinState.HIGH);
-      devices.add(device);
-    }
-    return devices;
+    return devicesControllers.values().stream().map(d -> d.getDeviceStatus(true))
+        .collect(Collectors.toList());
   }
 
   @Override
   public DeviceStatus changePowerStatus(DeviceStatus device) {
-    Preconditions.checkNotNull(device, "Invalid device");
-    SimpleEntry<DeviceStatus, GpioPinDigitalOutput> deviceEntry = devicesMap
-        .get(device.getPin());
-    Preconditions.checkNotNull(deviceEntry, "Device %s not found", device.toString());
-    deviceEntry.getValue().setState(device.isPowerOn() ? PinState.HIGH : PinState.LOW);
-    deviceEntry.getKey().setPowerOn(deviceEntry.getValue().getState() == PinState.HIGH);
-    return deviceEntry.getKey();
+    return Preconditions.checkNotNull(devicesControllers.get(device.getPin()),
+        "Device %s not found", device.toString())
+        .changeDeviceStatus(device.isPowerOn() ? true : false);
   }
 
   @Override
   public String getVideoUrl() {
-    String secret = VideoBroadcastHandler.getInstance().generateSecret();
-    return String.format(videoUrlFormat, secret);
+    return String.format(videoUrlFormat, VideoBroadcastHandler.getInstance().generateSecret());
   }
 }

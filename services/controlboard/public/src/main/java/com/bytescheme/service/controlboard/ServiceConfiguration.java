@@ -1,5 +1,8 @@
 package com.bytescheme.service.controlboard;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -27,19 +30,34 @@ public class ServiceConfiguration {
   @Autowired
   private ServiceProperties serviceProperties;
 
-  @Bean
   @Autowired
-  public RemoteObjectServer remoteObjectServer(
-      ConfigurationProvider configurationProvider) throws Exception {
-    GoogleAuthenticationProvider googleAuthenticationProvider = new GoogleAuthenticationProvider(
-        serviceProperties.getGoogleClientId(),
+  @Bean
+  public GoogleAuthenticationProvider googleAuthenticationProvider(
+      ConfigurationProvider configurationProvider) throws IOException, GeneralSecurityException {
+    return new GoogleAuthenticationProvider(serviceProperties.getGoogleClientId(),
         configurationProvider.getAuthenticationDataProvider());
-    AWSAuthenticationProvider awsAuthenticationProvider = new AWSAuthenticationProvider(
-        configurationProvider.getAuthenticationDataProvider());
-    PathProcessor pathProcessor = new PathProcessor(
-        configurationProvider.getNodeProvider());
-    SecurityProvider securityProvider = new SecurityProvider(pathProcessor,
+  }
+
+  @Autowired
+  @Bean
+  public AWSAuthenticationProvider awsAuthenticationProvider(
+      ConfigurationProvider configurationProvider) {
+    return new AWSAuthenticationProvider(configurationProvider.getAuthenticationDataProvider());
+  }
+
+  @Autowired
+  @Bean
+  public SecurityProvider securityProvider(ConfigurationProvider configurationProvider,
+      GoogleAuthenticationProvider googleAuthenticationProvider,
+      AWSAuthenticationProvider awsAuthenticationProvider) {
+    return new SecurityProvider(new PathProcessor(configurationProvider.getNodeProvider()),
         googleAuthenticationProvider, awsAuthenticationProvider);
+  }
+
+  @Autowired
+  @Bean
+  public RemoteObjectServer remoteObjectServer(ConfigurationProvider configurationProvider,
+      SecurityProvider securityProvider) throws Exception {
     RemoteObjectServer server = new RemoteObjectServer(true, securityProvider);
     RootImpl root = new RootImpl(configurationProvider.getObjectEndpointsProvider());
     root.setEnableMock(serviceProperties.isEnableMock());

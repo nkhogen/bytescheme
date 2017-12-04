@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 public class SimpleEventServer {
   private static final int SEND_EVENT_RETRY_LIMIT = 3;
   private static final int LOOP_SLEEP_TIME_SEC = 1;
+  private static final int SEND_EVENT_SLEEP_TIME_MS = 100;
   private final Logger LOG = LoggerFactory.getLogger(SimpleEventServer.class);
   private final ExecutorService executor = Executors.newCachedThreadPool();
   private final Map<UUID, SocketInfo> socketInfoMap = Collections.synchronizedMap(new HashMap<>());
@@ -53,6 +54,10 @@ public class SimpleEventServer {
       return socket.isClosed();
     }
 
+    public boolean isDisconnected() {
+      return !socket.isConnected();
+    }
+
     public synchronized void close() {
       IOUtils.closeQuietly(socket);
       IOUtils.closeQuietly(writer);
@@ -73,7 +78,8 @@ public class SimpleEventServer {
           UUID[] keys = socketInfoMap.keySet().toArray(new UUID[0]);
           for (UUID key : keys) {
             SocketInfo socketInfo = socketInfoMap.get(key);
-            if (socketInfo == null || socketInfo.isClosed()) {
+            if (socketInfo == null || socketInfo.isClosed() || socketInfo.isDisconnected()) {
+              IOUtils.closeQuietly(socketInfo);
               LOG.info("Client dropped connection");
               socketInfoMap.remove(key, socketInfo);
             }
@@ -89,10 +95,7 @@ public class SimpleEventServer {
         } catch (Exception e) {
           LOG.error("Exception in socket cleaner thread", e);
         } finally {
-          try {
-            TimeUnit.SECONDS.sleep(LOOP_SLEEP_TIME_SEC);
-          } catch (InterruptedException e) {
-          }
+          sleep(TimeUnit.SECONDS, LOOP_SLEEP_TIME_SEC);
         }
       }
     });
@@ -123,25 +126,33 @@ public class SimpleEventServer {
     });
   }
 
-  public void sendEvent(UUID id, String data) {
+  public String sendEvent(UUID id, String data) {
+    StringBuilder sb = new StringBuilder();
     for (int retry = 0; retry < SEND_EVENT_RETRY_LIMIT; retry++) {
       SocketInfo socketInfo = socketInfoMap.get(id);
       if (socketInfo == null || socketInfo.isClosed()) {
         socketInfoMap.remove(id, socketInfo);
-        try {
-          TimeUnit.SECONDS.sleep(LOOP_SLEEP_TIME_SEC);
-        } catch (InterruptedException e) {
-        }
+        sleep(TimeUnit.SECONDS, LOOP_SLEEP_TIME_SEC);
         continue;
       }
       try {
         socketInfo.writer.println(data);
-        break;
+        sleep(TimeUnit.MILLISECONDS, SEND_EVENT_SLEEP_TIME_MS);
+        while (socketInfo.scanner.hasNextLine()) {
+          sb.append(socketInfo.scanner.nextLine());
+          sb.append('\n');
+        }
+        return sb.toString();
       } catch (Exception e) {
         LOG.error("Error sending data to client ", e);
         socketInfoMap.remove(id, socketInfo);
+        throw new RuntimeException(e);
+      } finally {
+        socketInfoMap.remove(id, socketInfo);
+        IOUtils.closeQuietly(socketInfo.socket);
       }
     }
+    throw new RuntimeException("Rety limit exceeded");
   }
 
   public void shutdown() {
@@ -151,6 +162,13 @@ public class SimpleEventServer {
     executor.shutdown();
     try {
       executor.awaitTermination(1, TimeUnit.HOURS);
+    } catch (InterruptedException e) {
+    }
+  }
+
+  private void sleep(TimeUnit timeUnit, int duration) {
+    try {
+      Objects.requireNonNull(timeUnit).sleep(duration);
     } catch (InterruptedException e) {
     }
   }

@@ -23,9 +23,11 @@ public class ServiceProperties {
   private String authenticationJsonFile;
   private String commandFile;
   private String videoUrlFormat;
-  private Map<String, String> devices;
+  // controlboard.<UUID or 0>.0 = TV
+  private Map<String, Map<Integer, String>> devices;
   private UUID objectId;
   private boolean enableMock;
+  private int eventServerPort;
 
   @PostConstruct
   public void init() {
@@ -40,10 +42,8 @@ public class ServiceProperties {
     }
     Preconditions.checkNotNull(devices, "Invalid devices");
     Preconditions.checkNotNull(objectId, "Invalid object ID");
-    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat),
-        "Invalid video URL format");
-    Preconditions.checkNotNull(!Strings.isNullOrEmpty(commandFile),
-        "Invalid command file");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat), "Invalid video URL format");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(commandFile), "Invalid command file");
   }
 
   public String getBaseDir() {
@@ -86,11 +86,11 @@ public class ServiceProperties {
     this.videoUrlFormat = videoUrlFormat;
   }
 
-  public Map<String, String> getDevices() {
+  public Map<String, Map<Integer, String>> getDevices() {
     return devices;
   }
 
-  public void setDevices(Map<String, String> devices) {
+  public void setDevices(Map<String, Map<Integer, String>> devices) {
     this.devices = devices;
   }
 
@@ -108,5 +108,13 @@ public class ServiceProperties {
 
   public void setEnableMock(boolean enableMock) {
     this.enableMock = enableMock;
+  }
+
+  public int getEventServerPort() {
+    return eventServerPort;
+  }
+
+  public void setEventServerPort(int eventServerPort) {
+    this.eventServerPort = eventServerPort;
   }
 }

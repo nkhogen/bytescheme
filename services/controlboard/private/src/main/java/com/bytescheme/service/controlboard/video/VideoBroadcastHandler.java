@@ -35,15 +35,17 @@ import com.google.common.collect.HashBiMap;
 public class VideoBroadcastHandler {
   private static final Logger LOG = LoggerFactory.getLogger(VideoBroadcastHandler.class);
   private static final long UNCLAIMED_SECRET_LIFE = 60000L;
+  private static final String STREAM_MAGIC_BYTES = "jsmp";
+  private static volatile VideoBroadcastHandler INSTANCE;
+
+  private final CommandExecutor executor = new CommandExecutor();
+  private final ExecutorService executorService;
+
   private BiMap<String, Session> sessions = HashBiMap.create();
   private DelayQueue<Secret> secrets = new DelayQueue<>();
-  private static volatile VideoBroadcastHandler INSTANCE;
-  private static final String STREAM_MAGIC_BYTES = "jsmp";
   private String commandFile;
   private short width = 320;
   private short height = 240;
-  private final CommandExecutor executor = new CommandExecutor();
-  private final ExecutorService executorService;
 
   private VideoBroadcastHandler() {
     this.executorService = Executors.newSingleThreadExecutor(runnable -> {

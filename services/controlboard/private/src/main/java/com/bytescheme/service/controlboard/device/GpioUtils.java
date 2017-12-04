@@ -1,4 +1,4 @@
-package com.bytescheme.service.controlboard.gpio;
+package com.bytescheme.service.controlboard.device;
 
 import java.lang.reflect.Field;
 

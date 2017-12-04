@@ -60,6 +60,7 @@ public class DefaultNodeProvider
     transformAndSetData(allProperties);
   }
 
+  // Expensive matching
   protected boolean match(String input, String key) {
     Pattern pattern = Pattern.compile(input);
     Matcher matcher = pattern.matcher(key);

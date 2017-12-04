@@ -21,11 +21,10 @@ public class SimpleEventServerTest {
       try (Socket socket = new Socket("127.0.0.1", PORT);
           PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
           BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));) {
-        socket.setKeepAlive(true);
-        System.out.println("Sending object ID: " + OBJECT_ID);
+        System.out.println("Sending object ID to server: " + OBJECT_ID);
         out.println(OBJECT_ID.getMostSignificantBits());
         out.println(OBJECT_ID.getLeastSignificantBits());
-        while (socket.isConnected()) {
+        while (!socket.isClosed()) {
           String line = in.readLine();
           if (line == null) {
             System.out.println("Waiting for events");
@@ -35,7 +34,11 @@ public class SimpleEventServerTest {
             }
             continue;
           }
-          System.out.println("Received events from server " + line);
+          System.out.println("Received events from server: " + line);
+          out.println(2);
+          out.println("Hello from client");
+          out.println("Good morning! " + line);
+          out.close();
         }
       }
     }
@@ -56,7 +59,8 @@ public class SimpleEventServerTest {
     });
     clientThread.start();
     for (int i = 0; i < 100; i++) {
-      server.sendEvent(OBJECT_ID, "Hello " + i);
+      String reply = server.sendEvent(OBJECT_ID, "Hello " + i);
+      System.out.println("Received from client: " + reply);
       TimeUnit.SECONDS.sleep(10);
     }
     clientThread.join();

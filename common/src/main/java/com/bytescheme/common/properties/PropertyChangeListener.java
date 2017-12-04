@@ -7,6 +7,7 @@ import java.util.Map;
  *
  * @param <V>
  */
+@FunctionalInterface
 public interface PropertyChangeListener<V> {
   void onPropertyChange(Map<String, V> changedProperties, Map<String, V> allProperties);
 }
