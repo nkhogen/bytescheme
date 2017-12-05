@@ -31,7 +31,7 @@ public class SimpleEventServer {
   private static final int SEND_EVENT_SLEEP_TIME_MS = 100;
   private final Logger LOG = LoggerFactory.getLogger(SimpleEventServer.class);
   private final ExecutorService executor = Executors.newCachedThreadPool();
-  private final Map<UUID, SocketInfo> socketInfoMap = Collections.synchronizedMap(new HashMap<>());
+  private final Map<Integer, SocketInfo> socketInfoMap = Collections.synchronizedMap(new HashMap<>());
   private final int port;
 
   private ServerSocket serverSocket;
@@ -107,10 +107,9 @@ public class SimpleEventServer {
             SocketInfo socketInfo = null;
             try {
               socketInfo = new SocketInfo(clientSocket);
-              UUID objectId = new UUID(socketInfo.scanner.nextLong(),
-                  socketInfo.scanner.nextLong());
-              LOG.info("Read object ID {}", objectId);
-              socketInfoMap.put(objectId, socketInfo);
+              int clientId = socketInfo.scanner.nextInt();
+              LOG.info("Read client ID {}", clientId);
+              socketInfoMap.put(clientId, socketInfo);
               synchronized (socketInfoMap) {
                 socketInfoMap.notify();
               }
@@ -126,7 +125,7 @@ public class SimpleEventServer {
     });
   }
 
-  public String sendEvent(UUID id, String data) {
+  public String sendEvent(int id, String data) {
     StringBuilder sb = new StringBuilder();
     for (int retry = 0; retry < SEND_EVENT_RETRY_LIMIT; retry++) {
       SocketInfo socketInfo = socketInfoMap.get(id);

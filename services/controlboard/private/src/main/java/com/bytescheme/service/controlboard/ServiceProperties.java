@@ -23,8 +23,7 @@ public class ServiceProperties {
   private String authenticationJsonFile;
   private String commandFile;
   private String videoUrlFormat;
-  // controlboard.<UUID or 0>.0 = TV
-  private Map<String, Map<Integer, String>> devices;
+  private Map<Integer, String> devices;
   private UUID objectId;
   private boolean enableMock;
   private int eventServerPort;
@@ -86,11 +85,11 @@ public class ServiceProperties {
     this.videoUrlFormat = videoUrlFormat;
   }
 
-  public Map<String, Map<Integer, String>> getDevices() {
+  public Map<Integer, String> getDevices() {
     return devices;
   }
 
-  public void setDevices(Map<String, Map<Integer, String>> devices) {
+  public void setDevices(Map<Integer, String> devices) {
     this.devices = devices;
   }
 

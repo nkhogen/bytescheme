@@ -1,6 +1,5 @@
 package com.bytescheme.service.controlboard.remoteobjects;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,36 +30,20 @@ public class TargetControlBoardImpl implements ControlBoard {
   private final UUID objectId;
   private final String videoUrlFormat;
   private final SimpleEventServer eventServer;
-  private final Map<Integer, DeviceController> devicesControllers = new HashMap<>();
+  private final Map<Integer, DeviceController> devicesControllers;
 
-  public TargetControlBoardImpl(UUID objectId, Map<String, Map<Integer, String>> devices,
-      String videoUrlFormat, SimpleEventServer eventServer) {
+  public TargetControlBoardImpl(UUID objectId, Map<Integer, String> devices, String videoUrlFormat,
+      SimpleEventServer eventServer) {
     Preconditions.checkNotNull(objectId, "Invalid object ID");
     Preconditions.checkNotNull(MapUtils.isEmpty(devices), "Invalid tags");
     Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat), "Invalid video URL format");
     this.objectId = objectId;
     this.videoUrlFormat = videoUrlFormat;
     this.eventServer = eventServer;
-    devices.entrySet().stream().forEach(e -> {
-      if (e.getKey().equals("0")) {
-        e.getValue().entrySet().forEach(d -> {
-          DeviceStatus device = new DeviceStatus();
-          device.setPin(d.getKey());
-          device.setTag(d.getValue());
-          Preconditions.checkArgument(
-              devicesControllers.put(d.getKey(), new DeviceController(device)) == null);
-        });
-      } else {
-        UUID controllerNodeId = UUID.fromString(e.getKey());
-        e.getValue().entrySet().forEach(d -> {
-          DeviceStatus device = new DeviceStatus();
-          device.setPin(d.getKey());
-          device.setTag(d.getValue());
-          Preconditions.checkArgument(devicesControllers.put(d.getKey(),
-              new DeviceController(device, controllerNodeId, eventServer)) == null);
-        });
-      }
-    });
+    this.devicesControllers = devices.entrySet().stream()
+        .map(e -> new DeviceStatus(e.getKey(), e.getValue()))
+        .map(d -> new DeviceController(d, eventServer))
+        .collect(Collectors.toMap(dc -> dc.getDeviceStatus(false).getDeviceId(), dc -> dc));
   }
 
   @Override
@@ -76,7 +59,7 @@ public class TargetControlBoardImpl implements ControlBoard {
 
   @Override
   public DeviceStatus changePowerStatus(DeviceStatus device) {
-    return Preconditions.checkNotNull(devicesControllers.get(device.getPin()),
+    return Preconditions.checkNotNull(devicesControllers.get(device.getDeviceId()),
         "Device %s not found", device.toString())
         .changeDeviceStatus(device.isPowerOn() ? true : false);
   }

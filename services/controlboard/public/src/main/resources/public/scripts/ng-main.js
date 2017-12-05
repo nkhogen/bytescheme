@@ -109,9 +109,9 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 	$scope.displayDevice = function(device) {
 		var extendedDevice = null;
 		if (device.powerOn) {
-			extendedDevice = {pin : device.pin, tag : device.tag, powerOn : device.powerOn, button_css_class: globals.poweron_css_class};
+			extendedDevice = {deviceId : device.deviceId, tag : device.tag, powerOn : device.powerOn, button_css_class: globals.poweron_css_class};
 		} else {
-			extendedDevice = {pin : device.pin, tag : device.tag, powerOn : device.powerOn, button_css_class: globals.poweroff_css_class};
+			extendedDevice = {deviceId : device.deviceId, tag : device.tag, powerOn : device.powerOn, button_css_class: globals.poweroff_css_class};
 		}
 		return extendedDevice;
 	};
@@ -137,7 +137,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 	/* Click handler starts */
 	$scope.clickHandler = function(device) {
 		var next_device = {
-			pin : device.pin,
+			deviceId : device.deviceId,
 			tag : device.tag,
 			powerOn : !(device.powerOn)
 		};
@@ -155,7 +155,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 			var device = JSON.parse(response.data.returnValue);
 			var extendedDevice = $scope.displayDevice(device);
 			for(var d in $scope.devices) {
-				if($scope.devices[d].pin == extendedDevice.pin) {
+				if($scope.devices[d].deviceId == extendedDevice.deviceId) {
 					$scope.devices[d].powerOn = extendedDevice.powerOn;
 					$scope.devices[d].button_css_class = extendedDevice.button_css_class;
 					return;

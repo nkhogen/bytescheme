@@ -6,13 +6,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class SimpleEventServerTest {
 
   private static final int PORT = 9999;
-  private static final UUID OBJECT_ID = UUID.randomUUID();
+  private static final int CLIENT_ID = 1;
 
   public static void sendReceiveRequest() throws UnknownHostException, IOException {
 
@@ -21,9 +20,8 @@ public class SimpleEventServerTest {
       try (Socket socket = new Socket("127.0.0.1", PORT);
           PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
           BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));) {
-        System.out.println("Sending object ID to server: " + OBJECT_ID);
-        out.println(OBJECT_ID.getMostSignificantBits());
-        out.println(OBJECT_ID.getLeastSignificantBits());
+        System.out.println("Sending client ID to server: " + CLIENT_ID);
+        out.println(CLIENT_ID);
         while (!socket.isClosed()) {
           String line = in.readLine();
           if (line == null) {
@@ -59,7 +57,7 @@ public class SimpleEventServerTest {
     });
     clientThread.start();
     for (int i = 0; i < 100; i++) {
-      String reply = server.sendEvent(OBJECT_ID, "Hello " + i);
+      String reply = server.sendEvent(CLIENT_ID, "Hello " + i);
       System.out.println("Received from client: " + reply);
       TimeUnit.SECONDS.sleep(10);
     }

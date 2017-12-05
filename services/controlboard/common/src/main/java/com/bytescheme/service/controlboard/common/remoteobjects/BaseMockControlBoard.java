@@ -27,11 +27,7 @@ public class BaseMockControlBoard implements ControlBoard {
     Preconditions.checkNotNull(objectId, "Invalid object ID");
     this.objectId = objectId;
     for (int i = 0; i < 10; i++) {
-      DeviceStatus device = new DeviceStatus();
-      device.setPin(i);
-      device.setPowerOn(false);
-      device.setTag("Device " + i);
-      devices.put(i, device);
+      devices.put(i, new DeviceStatus(i, "Device " + i));
     }
   }
 
@@ -48,7 +44,7 @@ public class BaseMockControlBoard implements ControlBoard {
   @Override
   public DeviceStatus changePowerStatus(DeviceStatus status) {
     LOG.info("Received request with device status {}", status.toString());
-    DeviceStatus device = devices.get(status.getPin());
+    DeviceStatus device = devices.get(status.getDeviceId());
     if (device == null) {
       throw new IllegalArgumentException("Unknown pin " + status);
     }

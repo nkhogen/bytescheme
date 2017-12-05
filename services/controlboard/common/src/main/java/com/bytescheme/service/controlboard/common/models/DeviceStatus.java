@@ -1,8 +1,12 @@
 package com.bytescheme.service.controlboard.common.models;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import com.bytescheme.common.utils.JsonUtils;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Model for device status.
@@ -11,37 +15,46 @@ import com.bytescheme.common.utils.JsonUtils;
  *
  */
 public class DeviceStatus implements Serializable {
-	private static final long serialVersionUID = 1L;
-	private int pin;
-	private String tag;
-	private boolean powerOn;
+  public static final int ID_MULTIPLIER = 100;
+  private static final long serialVersionUID = 1L;
+  private final int deviceId;
+  private final String tag;
+  private boolean powerOn;
 
-	public int getPin() {
-		return pin;
-	}
+  @JsonCreator
+  public DeviceStatus(@JsonProperty("deviceId") int deviceId, @JsonProperty("tag") String tag) {
+    this.deviceId = deviceId;
+    this.tag = Objects.requireNonNull(tag);
+  }
 
-	public void setPin(int pin) {
-		this.pin = pin;
-	}
+  public int getDeviceId() {
+    return deviceId;
+  }
 
-	public String getTag() {
-		return tag;
-	}
+  public String getTag() {
+    return tag;
+  }
 
-	public void setTag(String tag) {
-		this.tag = tag;
-	}
+  public boolean isPowerOn() {
+    return powerOn;
+  }
 
-	public boolean isPowerOn() {
-		return powerOn;
-	}
+  public void setPowerOn(boolean powerOn) {
+    this.powerOn = powerOn;
+  }
 
-	public void setPowerOn(boolean powerOn) {
-		this.powerOn = powerOn;
-	}
+  @JsonIgnore
+  public int getControllerId() {
+    return getDeviceId() / ID_MULTIPLIER;
+  }
 
-	@Override
-	public String toString() {
-		return JsonUtils.toJson(this);
-	}
+  @JsonIgnore
+  public int getPin() {
+    return getDeviceId() % ID_MULTIPLIER;
+  }
+
+  @Override
+  public String toString() {
+    return JsonUtils.toJson(this);
+  }
 }
