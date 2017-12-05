@@ -9,6 +9,7 @@
 #define MIN_ARGS_COUNT 2
 // GPIO 12 for S4, 13 for S5, 14 for S3, 16 for S2
 
+// Static IP
 const char* host = "192.168.1.20";
 
 WiFiClient client;
@@ -49,14 +50,13 @@ void loop() {
         }
         int pin = tokens[1].toInt();
         if (tokens[0].equalsIgnoreCase("GET")) {
-            int value = digitalRead(pin);
-            String response = value == HIGH? "TRUE" : "FALSE";
+            client.println(digitalRead(pin) == HIGH? "TRUE" : "FALSE");
             Serial.println("GET command executed");
-            client.print(response);
         } else if (count > 2 && tokens[0].equalsIgnoreCase("SET")) {
             int value = tokens[2].toInt();
             digitalWrite(pin, value == 1? HIGH : LOW);
             Serial.println("SET command executed");
+            client.println(digitalRead(pin) == HIGH? "TRUE" : "FALSE");
         } else {
             Serial.println("Invalid command");
         }
