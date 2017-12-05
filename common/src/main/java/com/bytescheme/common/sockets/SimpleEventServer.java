@@ -19,6 +19,8 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 /**
  * Simple event server for small number of clients.
  *
@@ -30,8 +32,11 @@ public class SimpleEventServer {
   private static final int LOOP_SLEEP_TIME_SEC = 1;
   private static final int SEND_EVENT_SLEEP_TIME_MS = 100;
   private final Logger LOG = LoggerFactory.getLogger(SimpleEventServer.class);
-  private final ExecutorService executor = Executors.newCachedThreadPool();
-  private final Map<Integer, SocketInfo> socketInfoMap = Collections.synchronizedMap(new HashMap<>());
+  private final ExecutorService executor = Executors
+      .newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true)
+          .setNameFormat("SimpleEventServer-thread-%d").build());
+  private final Map<Integer, SocketInfo> socketInfoMap = Collections
+      .synchronizedMap(new HashMap<>());
   private final int port;
 
   private ServerSocket serverSocket;
@@ -78,7 +83,8 @@ public class SimpleEventServer {
           UUID[] keys = socketInfoMap.keySet().toArray(new UUID[0]);
           for (UUID key : keys) {
             SocketInfo socketInfo = socketInfoMap.get(key);
-            if (socketInfo == null || socketInfo.isClosed() || socketInfo.isDisconnected()) {
+            if (socketInfo == null || socketInfo.isClosed()
+                || socketInfo.isDisconnected()) {
               IOUtils.closeQuietly(socketInfo);
               LOG.info("Client dropped connection");
               socketInfoMap.remove(key, socketInfo);

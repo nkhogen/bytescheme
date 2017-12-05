@@ -2,10 +2,13 @@ package com.bytescheme.service.controlboard.remoteobjects;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.MapUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.bytescheme.common.sockets.SimpleEventServer;
 import com.bytescheme.service.controlboard.common.models.DeviceStatus;
@@ -27,23 +30,25 @@ import com.google.api.client.repackaged.com.google.common.base.Strings;
 @SuppressWarnings("unused")
 public class TargetControlBoardImpl implements ControlBoard {
   private static final long serialVersionUID = 1L;
+  private static final Logger LOG = LoggerFactory.getLogger(TargetControlBoardImpl.class);
   private final UUID objectId;
   private final String videoUrlFormat;
   private final SimpleEventServer eventServer;
   private final Map<Integer, DeviceController> devicesControllers;
 
-  public TargetControlBoardImpl(UUID objectId, Map<Integer, String> devices, String videoUrlFormat,
-      SimpleEventServer eventServer) {
+  public TargetControlBoardImpl(UUID objectId, Map<Integer, String> devices,
+      String videoUrlFormat, SimpleEventServer eventServer) {
     Preconditions.checkNotNull(objectId, "Invalid object ID");
     Preconditions.checkNotNull(MapUtils.isEmpty(devices), "Invalid tags");
-    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat), "Invalid video URL format");
+    Preconditions.checkNotNull(!Strings.isNullOrEmpty(videoUrlFormat),
+        "Invalid video URL format");
     this.objectId = objectId;
     this.videoUrlFormat = videoUrlFormat;
     this.eventServer = eventServer;
     this.devicesControllers = devices.entrySet().stream()
         .map(e -> new DeviceStatus(e.getKey(), e.getValue()))
-        .map(d -> new DeviceController(d, eventServer))
-        .collect(Collectors.toMap(dc -> dc.getDeviceStatus(false).getDeviceId(), dc -> dc));
+        .map(d -> new DeviceController(d, eventServer)).collect(
+            Collectors.toMap(dc -> dc.getDeviceStatus(false).getDeviceId(), dc -> dc));
   }
 
   @Override
@@ -53,8 +58,16 @@ public class TargetControlBoardImpl implements ControlBoard {
 
   @Override
   public List<DeviceStatus> listDevices() {
-    return devicesControllers.values().stream().map(d -> d.getDeviceStatus(true))
-        .collect(Collectors.toList());
+    return devicesControllers.values().stream().map(d -> {
+      try {
+        return d.getDeviceStatus(true);
+      } catch (Exception e) {
+        LOG.error(
+            String.format("Skipping device %s due to error", d.getDeviceStatus(false)),
+            e);
+      }
+      return null;
+    }).filter(Objects::nonNull).collect(Collectors.toList());
   }
 
   @Override
@@ -66,6 +79,7 @@ public class TargetControlBoardImpl implements ControlBoard {
 
   @Override
   public String getVideoUrl() {
-    return String.format(videoUrlFormat, VideoBroadcastHandler.getInstance().generateSecret());
+    return String.format(videoUrlFormat,
+        VideoBroadcastHandler.getInstance().generateSecret());
   }
 }
