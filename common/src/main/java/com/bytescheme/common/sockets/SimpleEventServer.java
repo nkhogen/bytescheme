@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -80,8 +79,8 @@ public class SimpleEventServer {
     executor.submit(() -> {
       while (isRunning) {
         try {
-          UUID[] keys = socketInfoMap.keySet().toArray(new UUID[0]);
-          for (UUID key : keys) {
+          Integer[] keys = socketInfoMap.keySet().toArray(new Integer[0]);
+          for (int key : keys) {
             SocketInfo socketInfo = socketInfoMap.get(key);
             if (socketInfo == null || socketInfo.isClosed()
                 || socketInfo.isDisconnected()) {

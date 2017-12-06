@@ -16,7 +16,7 @@ import com.pi4j.io.gpio.PinState;
  *
  */
 public class DeviceController {
-  public static final String SET_POWER_EVENT_FORMAT = "SET %d %s";
+  public static final String SET_POWER_EVENT_FORMAT = "SET %d %d";
   public static final String GET_POWER_EVENT_FORMAT = "GET %d";
 
   private final DeviceStatus deviceStatus;
@@ -37,9 +37,11 @@ public class DeviceController {
 
   public DeviceStatus changeDeviceStatus(boolean status) {
     if (digitalOutput == null) {
-      deviceStatus.setPowerOn(
-          Boolean.getBoolean(eventServer.sendEvent(deviceStatus.getControllerId(),
-              String.format(SET_POWER_EVENT_FORMAT, deviceStatus.getPin(), status))));
+      deviceStatus
+          .setPowerOn(Boolean.valueOf(eventServer
+              .sendEvent(deviceStatus.getControllerId(), String
+                  .format(SET_POWER_EVENT_FORMAT, deviceStatus.getPin(), status ? 1 : 0))
+              .trim()));
     } else {
       digitalOutput.setState(status ? PinState.HIGH : PinState.LOW);
       deviceStatus.setPowerOn(digitalOutput.isHigh());
@@ -50,9 +52,11 @@ public class DeviceController {
   public DeviceStatus getDeviceStatus(boolean load) {
     if (load) {
       if (digitalOutput == null) {
-        deviceStatus.setPowerOn(
-            Boolean.getBoolean(eventServer.sendEvent(deviceStatus.getControllerId(),
-                String.format(GET_POWER_EVENT_FORMAT, deviceStatus.getPin()))));
+        deviceStatus
+            .setPowerOn(Boolean.valueOf(eventServer
+                .sendEvent(deviceStatus.getControllerId(),
+                    String.format(GET_POWER_EVENT_FORMAT, deviceStatus.getPin()))
+                .trim()));
       } else {
         deviceStatus.setPowerOn(digitalOutput.isHigh());
       }
