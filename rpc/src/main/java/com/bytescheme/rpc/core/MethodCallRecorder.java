@@ -11,6 +11,8 @@ import com.google.common.base.Preconditions;
  *
  */
 public final class MethodCallRecorder {
+
+  @FunctionalInterface
   public interface LogMessageHandler {
     void process(UUID requestId, long elapsedTime, long methodTime);
   }
