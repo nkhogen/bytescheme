@@ -1,3 +1,5 @@
+/* @author Naorem Khogendro Singh */
+
 #include <ESP8266WiFi.h>
 #include <WString.h>
 #include <DNSServer.h>
@@ -32,47 +34,45 @@ void loop() {
         Serial.println("connected");
         client.println(1);
         delay(100);
-        while (client.connected() && !client.available()) {
-            delay(100);
-        }
-        if (!client.connected()) {
-            client.stop();
-            return;
-        }
-        String line = client.readStringUntil('\n');
-        Serial.println(line);
-        String tokens[MAX_ARGS_COUNT];
-        int count = 0;
-        char* str = new char[line.length() + 1];
-        line.toCharArray(str, line.length() + 1);
-        str[line.length()] = 0;
-        char* p  = strtok(str, COMMAND_DELIM);
-        while (count < MAX_ARGS_COUNT && p != NULL) {
-            tokens[count++] = String(p);
-            p = strtok(NULL, COMMAND_DELIM);
-        }
-        delete[] str;
-        if (count < MIN_ARGS_COUNT) {
-            Serial.println("Invalid data");
-            client.stop();
-            return;
-        }
-        int pin = tokens[1].toInt();
-        if (tokens[0].equalsIgnoreCase("GET")) {
-            client.println(digitalRead(pin) == HIGH? "TRUE" : "FALSE");
-            Serial.println("GET command executed");
-        } else if (count > 2 && tokens[0].equalsIgnoreCase("SET")) {
-            int value = tokens[2].toInt();
-            digitalWrite(pin, value == 1? HIGH : LOW);
-            Serial.println("SET command executed");
-            client.println(digitalRead(pin) == HIGH? "TRUE" : "FALSE");
-        } else {
-            Serial.println("Invalid command line");
+        while (client.connected()) {
+            if (!client.available()) {
+                delay(100);
+                continue;
+            }
+            String line = client.readStringUntil('\n');
             Serial.println(line);
+            String tokens[MAX_ARGS_COUNT];
+            int count = 0;
+            char* str = new char[line.length() + 1];
+            line.toCharArray(str, line.length() + 1);
+            str[line.length()] = 0;
+            char* p  = strtok(str, COMMAND_DELIM);
+            while (count < MAX_ARGS_COUNT && p != NULL) {
+                tokens[count++] = String(p);
+                p = strtok(NULL, COMMAND_DELIM);
+            }
+            delete[] str;
+            if (count < MIN_ARGS_COUNT) {
+                Serial.println("Invalid data");
+                continue;
+            }
+            int pin = tokens[1].toInt();
+            if (tokens[0].equalsIgnoreCase("GET")) {
+                client.println(digitalRead(pin) == HIGH? "TRUE" : "FALSE");
+                Serial.println("GET command executed");
+            } else if (count > 2 && tokens[0].equalsIgnoreCase("SET")) {
+                int value = tokens[2].toInt();
+                digitalWrite(pin, value == 1? HIGH : LOW);
+                Serial.println("SET command executed");
+                client.println(digitalRead(pin) == HIGH? "TRUE" : "FALSE");
+            } else {
+                Serial.println("Invalid command line");
+                Serial.println(line);
+            }
         }
         client.stop();
-        Serial.println("Disonnected");
         delay(100);
     }
 }
+
 

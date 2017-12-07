@@ -31,8 +31,9 @@ public class SimpleEventServer {
   private static final int LOOP_SLEEP_TIME_MS = 400;
   private static final int SEND_EVENT_SLEEP_TIME_MS = 100;
   private final Logger LOG = LoggerFactory.getLogger(SimpleEventServer.class);
-  private final ExecutorService executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
-      .setDaemon(true).setNameFormat("SimpleEventServer-thread-%d").build());
+  private final ExecutorService executor = Executors
+      .newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true)
+          .setNameFormat("SimpleEventServer-thread-%d").build());
   private final Map<Integer, SocketInfo> socketInfoMap = Collections
       .synchronizedMap(new HashMap<>());
   private final int port;
@@ -81,7 +82,8 @@ public class SimpleEventServer {
           Integer[] keys = socketInfoMap.keySet().toArray(new Integer[0]);
           for (int key : keys) {
             SocketInfo socketInfo = socketInfoMap.get(key);
-            if (socketInfo == null || socketInfo.isClosed() || socketInfo.isDisconnected()) {
+            if (socketInfo == null || socketInfo.isClosed()
+                || socketInfo.isDisconnected()) {
               LOG.info("Client dropped connection");
               socketInfoMap.remove(key, socketInfo);
               IOUtils.closeQuietly(socketInfo);
@@ -142,7 +144,8 @@ public class SimpleEventServer {
       try {
         socketInfo.writer.println(data);
         sleep(TimeUnit.MILLISECONDS, SEND_EVENT_SLEEP_TIME_MS);
-        return socketInfo.scanner.nextLine();
+        // Warning: blocking call
+        return socketInfo.scanner.hasNextLine() ? socketInfo.scanner.nextLine() : null;
       } catch (Exception e) {
         LOG.error("Error sending data to client ", e);
         socketInfoMap.remove(id, socketInfo);
