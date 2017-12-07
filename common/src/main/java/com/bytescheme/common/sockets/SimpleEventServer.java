@@ -31,9 +31,8 @@ public class SimpleEventServer {
   private static final int LOOP_SLEEP_TIME_MS = 400;
   private static final int SEND_EVENT_SLEEP_TIME_MS = 100;
   private final Logger LOG = LoggerFactory.getLogger(SimpleEventServer.class);
-  private final ExecutorService executor = Executors
-      .newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true)
-          .setNameFormat("SimpleEventServer-thread-%d").build());
+  private final ExecutorService executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+      .setDaemon(true).setNameFormat("SimpleEventServer-thread-%d").build());
   private final Map<Integer, SocketInfo> socketInfoMap = Collections
       .synchronizedMap(new HashMap<>());
   private final int port;
@@ -82,11 +81,10 @@ public class SimpleEventServer {
           Integer[] keys = socketInfoMap.keySet().toArray(new Integer[0]);
           for (int key : keys) {
             SocketInfo socketInfo = socketInfoMap.get(key);
-            if (socketInfo == null || socketInfo.isClosed()
-                || socketInfo.isDisconnected()) {
-              IOUtils.closeQuietly(socketInfo);
+            if (socketInfo == null || socketInfo.isClosed() || socketInfo.isDisconnected()) {
               LOG.info("Client dropped connection");
               socketInfoMap.remove(key, socketInfo);
+              IOUtils.closeQuietly(socketInfo);
             }
           }
           while (socketInfoMap.isEmpty()) {
@@ -112,7 +110,8 @@ public class SimpleEventServer {
             SocketInfo socketInfo = null;
             try {
               socketInfo = new SocketInfo(clientSocket);
-              int clientId = socketInfo.scanner.nextInt();
+              // nextInt does not consume \n
+              int clientId = Integer.parseInt(socketInfo.scanner.nextLine());
               LOG.info("Read client ID {}", clientId);
               socketInfoMap.put(clientId, socketInfo);
               synchronized (socketInfoMap) {
@@ -131,29 +130,24 @@ public class SimpleEventServer {
   }
 
   public String sendEvent(int id, String data) {
-    StringBuilder sb = new StringBuilder();
     for (int retry = 0; retry < SEND_EVENT_RETRY_LIMIT; retry++) {
       SocketInfo socketInfo = socketInfoMap.get(id);
       if (socketInfo == null || socketInfo.isClosed()) {
+        LOG.info("Removing socket for client {}", id);
         socketInfoMap.remove(id, socketInfo);
+        IOUtils.closeQuietly(socketInfo);
         sleep(TimeUnit.MILLISECONDS, LOOP_SLEEP_TIME_MS);
         continue;
       }
       try {
         socketInfo.writer.println(data);
         sleep(TimeUnit.MILLISECONDS, SEND_EVENT_SLEEP_TIME_MS);
-        while (socketInfo.scanner.hasNextLine()) {
-          sb.append(socketInfo.scanner.nextLine());
-          sb.append('\n');
-        }
-        return sb.toString();
+        return socketInfo.scanner.nextLine();
       } catch (Exception e) {
         LOG.error("Error sending data to client ", e);
         socketInfoMap.remove(id, socketInfo);
+        IOUtils.closeQuietly(socketInfo);
         throw new RuntimeException(e);
-      } finally {
-        socketInfoMap.remove(id, socketInfo);
-        IOUtils.closeQuietly(socketInfo.socket);
       }
     }
     throw new RuntimeException("Rety limit exceeded");

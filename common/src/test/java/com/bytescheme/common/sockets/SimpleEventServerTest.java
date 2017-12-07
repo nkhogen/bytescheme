@@ -20,12 +20,14 @@ public class SimpleEventServerTest {
       try (Socket socket = new Socket("127.0.0.1", PORT);
           PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
           BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));) {
+        socket.setKeepAlive(true);
         System.out.println("Sending client ID to server: " + CLIENT_ID);
         out.println(CLIENT_ID);
-        while (!socket.isClosed()) {
+        while (!socket.isClosed() && socket.isConnected()) {
           String line = in.readLine();
           if (line == null) {
             System.out.println("Waiting for events");
+            socket.close();
             try {
               TimeUnit.MILLISECONDS.sleep(500);
             } catch (InterruptedException e) {
@@ -33,10 +35,8 @@ public class SimpleEventServerTest {
             continue;
           }
           System.out.println("Received events from server: " + line);
-          out.println(2);
-          out.println("Hello from client");
           out.println("Good morning! " + line);
-          out.close();
+          out.flush();
         }
       }
     }
@@ -57,9 +57,10 @@ public class SimpleEventServerTest {
     });
     clientThread.start();
     for (int i = 0; i < 100; i++) {
+      System.out.println("Sending for " + i);
       String reply = server.sendEvent(CLIENT_ID, "Hello " + i);
       System.out.println("Received from client: " + reply);
-      TimeUnit.SECONDS.sleep(10);
+      TimeUnit.SECONDS.sleep(1);
     }
     clientThread.join();
   }
