@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public class SimpleEventServer {
   private static final int SEND_EVENT_RETRY_LIMIT = 3;
-  private static final int LOOP_SLEEP_TIME_SEC = 1;
+  private static final int LOOP_SLEEP_TIME_MS = 400;
   private static final int SEND_EVENT_SLEEP_TIME_MS = 100;
   private final Logger LOG = LoggerFactory.getLogger(SimpleEventServer.class);
   private final ExecutorService executor = Executors
@@ -100,7 +100,7 @@ public class SimpleEventServer {
         } catch (Exception e) {
           LOG.error("Exception in socket cleaner thread", e);
         } finally {
-          sleep(TimeUnit.SECONDS, LOOP_SLEEP_TIME_SEC);
+          sleep(TimeUnit.MILLISECONDS, LOOP_SLEEP_TIME_MS);
         }
       }
     });
@@ -136,7 +136,7 @@ public class SimpleEventServer {
       SocketInfo socketInfo = socketInfoMap.get(id);
       if (socketInfo == null || socketInfo.isClosed()) {
         socketInfoMap.remove(id, socketInfo);
-        sleep(TimeUnit.SECONDS, LOOP_SLEEP_TIME_SEC);
+        sleep(TimeUnit.MILLISECONDS, LOOP_SLEEP_TIME_MS);
         continue;
       }
       try {
