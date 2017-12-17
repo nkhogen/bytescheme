@@ -1,5 +1,7 @@
 package com.bytescheme.service.controlboard.common.remoteobjects;
 
+import java.util.UUID;
+
 import com.bytescheme.rpc.core.RemoteObject;
 
 /**
@@ -10,5 +12,7 @@ import com.bytescheme.rpc.core.RemoteObject;
  *
  */
 public interface Root extends RemoteObject {
+  public static final UUID OBJECT_ID = new UUID(0L, 0L);
+
 	ControlBoard getControlBoard(String user);
 }

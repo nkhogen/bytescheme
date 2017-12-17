@@ -38,7 +38,6 @@ public class RootImpl implements Root {
   private static final long serialVersionUID = 1L;
   private static final Logger LOG = LoggerFactory.getLogger(RootImpl.class);
   private static final int CLIENT_RETRY_LIMIT = 3;
-  private static final UUID OBJECT_ID = new UUID(0L, 0L);
   private static final String TARGET_USER = "controlboard";
   private final Function<String, Set<ObjectEndpoint>> objectEndpointProvider;
 

@@ -44,25 +44,29 @@ public class Scanner extends AbstractScheduledService {
 
   @Override
   protected void runOneIteration() throws Exception {
-    LOG.info("Loading scanner meta data");
-    ScannerMetadata scannerMetadata = eventSchedulerDao
-        .load(ScannerMetadata.class, schedulerId, null, false);
-    long currentTime = Instant.now().getEpochSecond();
-    if (scannerMetadata == null) {
-      scannerMetadata = new ScannerMetadata();
-      scannerMetadata.setId(schedulerId);
-      scannerMetadata.setScanTime(currentTime);
-    }
-    LOG.debug(
-        "Current time {}, scan time {}",
-        currentTime,
-        scannerMetadata.getScanTime());
-    if (currentTime >= scannerMetadata.getScanTime()) {
-      long endTime = currentTime + SCAN_INTERVAL_SEC;
-      LOG.info("Scanning for events upto {} ...", endTime);
-      eventSchedulerDao.scanEvents(schedulerId, endTime, consumer);
-      scannerMetadata.setScanTime(endTime);
-      eventSchedulerDao.save(scannerMetadata);
+    try {
+      LOG.info("Loading scanner meta data");
+      ScannerMetadata scannerMetadata = eventSchedulerDao
+          .load(ScannerMetadata.class, schedulerId, null, false);
+      long currentTime = Instant.now().getEpochSecond();
+      if (scannerMetadata == null) {
+        scannerMetadata = new ScannerMetadata();
+        scannerMetadata.setId(schedulerId);
+        scannerMetadata.setScanTime(currentTime);
+      }
+      LOG.debug(
+          "Current time {}, scan time {}",
+          currentTime,
+          scannerMetadata.getScanTime());
+      if (currentTime >= scannerMetadata.getScanTime()) {
+        long endTime = currentTime + SCAN_INTERVAL_SEC;
+        LOG.info("Scanning for events upto {} ...", endTime);
+        eventSchedulerDao.scanEvents(schedulerId, endTime, consumer);
+        scannerMetadata.setScanTime(endTime);
+        eventSchedulerDao.save(scannerMetadata);
+      }
+    } catch (Exception e) {
+      LOG.error("Exception while scanning...", e);
     }
   }
 

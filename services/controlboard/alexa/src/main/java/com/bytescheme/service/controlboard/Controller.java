@@ -2,7 +2,6 @@ package com.bytescheme.service.controlboard;
 
 import java.net.MalformedURLException;
 import java.util.List;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,6 @@ import com.bytescheme.service.controlboard.common.remoteobjects.Root;
 public class Controller implements Speechlet {
   private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
   private static final String ENDPOINT = "https://controller.bytescheme.com/rpc";
-  private static final UUID OBJECT_ID = new UUID(0L, 0L);
 
   private final RemoteObjectClientBuilder clientBuilder;
 
@@ -80,7 +78,7 @@ public class Controller implements Speechlet {
       if ("SetStatus".equals(intentName)) {
         Slot deviceSlot = intent.getSlot("DEVICE");
         Slot statusSlot = intent.getSlot("STATUS");
-        Root root = client.createRemoteObject(Root.class, OBJECT_ID);
+        Root root = client.createRemoteObject(Root.class, Root.OBJECT_ID);
         ControlBoard controlBoard = root.getControlBoard(userId);
         if (controlBoard == null) {
           return sendSpeechResponse("No controlboard found for the user");

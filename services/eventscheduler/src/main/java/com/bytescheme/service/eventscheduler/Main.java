@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Entry class for event scheduler service.
  * @author Naorem Khogendro Singh
- *
+ * TODO
  */
 @SpringBootApplication
 public class Main {
