@@ -21,6 +21,10 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.api.client.util.BackOff;
 import com.google.api.client.util.ExponentialBackOff;
 
+/**
+ * @author Naorem Khogendro Singh
+ *
+ */
 public class EventSchedulerDao {
   private static final Logger LOG = LoggerFactory.getLogger(EventSchedulerDao.class);
 

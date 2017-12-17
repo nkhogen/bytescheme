@@ -11,7 +11,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
  * @author Naorem Khogendro Singh
  *
  */
-@DynamoDBTable(tableName = "Scanner")
+@DynamoDBTable(tableName = "Scanners")
 public class ScannerMetadata {
   private UUID id;
   private Long scanTime;

@@ -10,6 +10,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTyped;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 
+/**
+ * @author Naorem Khogendro Singh
+ *
+ */
 @DynamoDBTable(tableName = "Events")
 public class Event {
   private UUID id;

@@ -1,5 +1,9 @@
 package com.bytescheme.service.eventscheduler.domains;
 
+/**
+ * @author Naorem Khogendro Singh
+ *
+ */
 public class Constants {
   public static final String ID_FIELD = "ID";
   public static final String SCHEDULER_ID = "SCHEDULER_ID";

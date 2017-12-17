@@ -1,5 +1,6 @@
 package com.bytescheme.service.eventscheduler;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -18,19 +19,31 @@ import com.bytescheme.service.eventscheduler.domains.Event.EventStatus;
 import com.bytescheme.service.eventscheduler.domains.EventSchedulerDao;
 import com.bytescheme.service.eventscheduler.domains.ScannerMetadata;
 
+/**
+ * Scheduler consumes the events emitted by the Scanner and schedules them.
+ *
+ * @author Naorem Khogendro Singh
+ *
+ */
 public class Scheduler implements Consumer<Event> {
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 
+  // Maximum time taken to process an event once triggered
   private static final int MAX_EVENT_PROCESS_TIME_SEC = 10;
 
+  private static final int THREAD_POOL_SIZE = 10;
+
   private final ScheduledExecutorService scheduledExecutorService = Executors
-      .newScheduledThreadPool(4);
-  private final Map<UUID, Event> events = Collections.synchronizedMap(new WeakHashMap<>());
+      .newScheduledThreadPool(THREAD_POOL_SIZE);
+  private final Map<UUID, Event> events = Collections
+      .synchronizedMap(new WeakHashMap<>());
   private final EventSchedulerDao eventSchedulerDao;
   private final UUID schedulerId;
   private final Consumer<Event> consumer;
 
-  public Scheduler(UUID schedulerId, EventSchedulerDao eventSchedulerDao,
+  public Scheduler(
+      UUID schedulerId,
+      EventSchedulerDao eventSchedulerDao,
       Consumer<Event> consumer) {
     this.schedulerId = Objects.requireNonNull(schedulerId);
     this.eventSchedulerDao = Objects.requireNonNull(eventSchedulerDao);
@@ -44,65 +57,18 @@ public class Scheduler implements Consumer<Event> {
       return;
     }
     updateEvent(event);
-    long currentTime = System.currentTimeMillis();
-    long delay = currentTime >= event.getTriggerTime() ? 0 : event.getTriggerTime() - currentTime;
+    long currentTime = Instant.now().getEpochSecond();
+    long delay = currentTime >= event.getTriggerTime() ? 0
+        : event.getTriggerTime() - currentTime;
     scheduleEvent(event.getId(), delay, false);
-  }
-
-  public void scheduleEvent(UUID eventId, long delay, boolean isOwner) {
-    scheduledExecutorService.schedule(() -> {
-      Event event = eventSchedulerDao.load(Event.class, eventId, schedulerId, true);
-      if (event == null) {
-        events.remove(eventId);
-        LOG.info("Event {} is not found", eventId);
-      } else {
-        updateEvent(event);
-        if (event.getStatus() == EventStatus.SCHEDULED) {
-          processEvent(event);
-        } else if (event.getStatus() == EventStatus.STARTED) {
-          if (isOwner) {
-            processEvent(event);
-          } else {
-            scheduleEvent(eventId, System.currentTimeMillis() + MAX_EVENT_PROCESS_TIME_SEC, true);
-          }
-        } else {
-          events.remove(eventId);
-          LOG.info("Event {} is already cancelled or completed", event.getId());
-        }
-      }
-    }, delay, TimeUnit.SECONDS);
-  }
-
-  private void processEvent(Event event) {
-    event.setModifyTime(System.currentTimeMillis());
-    event.setStatus(EventStatus.STARTED);
-    if (eventSchedulerDao.save(event)) {
-      event = eventSchedulerDao.load(Event.class, event.getId(), schedulerId, true);
-      updateEvent(event);
-      consumer.accept(event);
-      event.setModifyTime(System.currentTimeMillis());
-      event.setStatus(EventStatus.ENDED);
-      eventSchedulerDao.save(event);
-      events.remove(event.getId());
-    } else {
-      scheduleEvent(event.getId(), System.currentTimeMillis() + MAX_EVENT_PROCESS_TIME_SEC, true);
-      LOG.info("Another process has already taken this event {}", event.getId());
-      LOG.info("Waiting for it to complete");
-    }
-  }
-
-  private void updateEvent(Event event) {
-    // Making weak reference work
-    events.put(
-        new UUID(event.getId().getMostSignificantBits(), event.getId().getLeastSignificantBits()),
-        event);
   }
 
   public void schedule(Event event) {
     Objects.nonNull(event);
+    long currentTime = Instant.now().getEpochSecond();
     event.setSchedulerId(schedulerId);
     event.setId(UUID.randomUUID());
-    event.setCreateTime(System.currentTimeMillis());
+    event.setCreateTime(currentTime);
     event.setModifyTime(event.getCreateTime());
     event.setStatus(EventStatus.SCHEDULED);
     if (eventSchedulerDao.save(event)) {
@@ -127,5 +93,60 @@ public class Scheduler implements Consumer<Event> {
         }
       }
     }
+  }
+
+  public void stop() {
+    scheduledExecutorService.shutdown();
+  }
+
+  private void scheduleEvent(UUID eventId, long delay, boolean isOwner) {
+    scheduledExecutorService.schedule(() -> {
+      Event event = eventSchedulerDao.load(Event.class, eventId, schedulerId, true);
+      if (event == null) {
+        events.remove(eventId);
+        LOG.info("Event {} is not found", eventId);
+      } else {
+        updateEvent(event);
+        if (event.getStatus() == EventStatus.SCHEDULED) {
+          processEvent(event);
+        } else if (event.getStatus() == EventStatus.STARTED) {
+          if (isOwner) {
+            processEvent(event);
+          } else {
+            scheduleEvent(eventId, MAX_EVENT_PROCESS_TIME_SEC, true);
+          }
+        } else {
+          events.remove(eventId);
+          LOG.info("Event {} is already cancelled or completed", event.getId());
+        }
+      }
+    }, delay, TimeUnit.SECONDS);
+  }
+
+  private void processEvent(Event event) {
+    event.setModifyTime(Instant.now().getEpochSecond());
+    event.setStatus(EventStatus.STARTED);
+    if (eventSchedulerDao.save(event)) {
+      event = eventSchedulerDao.load(Event.class, event.getId(), schedulerId, true);
+      updateEvent(event);
+      consumer.accept(event);
+      event.setModifyTime(Instant.now().getEpochSecond());
+      event.setStatus(EventStatus.ENDED);
+      eventSchedulerDao.save(event);
+      events.remove(event.getId());
+    } else {
+      scheduleEvent(event.getId(), MAX_EVENT_PROCESS_TIME_SEC, true);
+      LOG.info("Another process has already taken this event {}", event.getId());
+      LOG.info("Waiting for it to complete");
+    }
+  }
+
+  private void updateEvent(Event event) {
+    // Making weak reference work
+    events.put(
+        new UUID(
+            event.getId().getMostSignificantBits(),
+            event.getId().getLeastSignificantBits()),
+        event);
   }
 }
