@@ -17,5 +17,6 @@
   <modules>
     <module>common</module>
     <module>controlboard</module>
+    <module>eventscheduler</module>
   </modules>
 </project>
