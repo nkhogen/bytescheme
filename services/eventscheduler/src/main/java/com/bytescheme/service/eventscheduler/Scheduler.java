@@ -1,13 +1,12 @@
 package com.bytescheme.service.eventscheduler;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -18,6 +17,7 @@ import com.bytescheme.service.eventscheduler.domains.Event;
 import com.bytescheme.service.eventscheduler.domains.Event.EventStatus;
 import com.bytescheme.service.eventscheduler.domains.EventSchedulerDao;
 import com.bytescheme.service.eventscheduler.domains.ScannerMetadata;
+import com.google.common.collect.Maps;
 
 /**
  * Scheduler consumes the events emitted by the Scanner and schedules them.
@@ -35,8 +35,7 @@ public class Scheduler implements Consumer<Event> {
 
   private final ScheduledExecutorService scheduledExecutorService = Executors
       .newScheduledThreadPool(THREAD_POOL_SIZE);
-  private final Map<UUID, Event> events = Collections
-      .synchronizedMap(new WeakHashMap<>());
+  private final Map<UUID, ScheduledFuture<?>> futures = Maps.newConcurrentMap();
   private final EventSchedulerDao eventSchedulerDao;
   private final UUID schedulerId;
   private final Consumer<Event> consumer;
@@ -52,11 +51,15 @@ public class Scheduler implements Consumer<Event> {
 
   @Override
   public void accept(Event event) {
-    if (events.containsKey(event.getId())) {
-      LOG.info("Event {} is scheduled", event.getId());
+    ScheduledFuture<?> future = futures.get(event.getId());
+    if (future != null) {
+      LOG.info("Event {} is already scheduled", event);
+      if (event.getStatus() == EventStatus.CANCELLED) {
+        LOG.info("Event {} is cancelled", event);
+        future.cancel(true);
+      }
       return;
     }
-    updateEvent(event);
     long currentTime = Instant.now().getEpochSecond();
     long delay = currentTime >= event.getTriggerTime() ? 0
         : event.getTriggerTime() - currentTime;
@@ -95,32 +98,54 @@ public class Scheduler implements Consumer<Event> {
     }
   }
 
+  public boolean cancel(UUID eventId) {
+    Event event = eventSchedulerDao.load(Event.class, eventId, schedulerId, false);
+    if (event == null) {
+      return false;
+    }
+    event.setStatus(EventStatus.CANCELLED);
+    if (!eventSchedulerDao.save(event)) {
+      return false;
+    }
+    ScheduledFuture<?> future = futures.get(event.getId());
+    if (future != null) {
+      future.cancel(true);
+    }
+    return true;
+  }
+
   public void stop() {
     scheduledExecutorService.shutdown();
   }
 
   private void scheduleEvent(UUID eventId, long delay, boolean isOwner) {
-    scheduledExecutorService.schedule(() -> {
-      Event event = eventSchedulerDao.load(Event.class, eventId, schedulerId, true);
-      if (event == null) {
-        events.remove(eventId);
-        LOG.info("Event {} is not found", eventId);
-      } else {
-        updateEvent(event);
-        if (event.getStatus() == EventStatus.SCHEDULED) {
-          processEvent(event);
-        } else if (event.getStatus() == EventStatus.STARTED) {
-          if (isOwner) {
-            processEvent(event);
-          } else {
-            scheduleEvent(eventId, MAX_EVENT_PROCESS_TIME_SEC, true);
-          }
+    ScheduledFuture<?> future = scheduledExecutorService.schedule(() -> {
+      boolean isRescheduled = false;
+      try {
+        Event event = eventSchedulerDao.load(Event.class, eventId, schedulerId, true);
+        if (event == null) {
+          LOG.info("Event {} is not found", eventId);
         } else {
-          events.remove(eventId);
-          LOG.info("Event {} is already cancelled or completed", event.getId());
+          if (event.getStatus() == EventStatus.SCHEDULED) {
+            processEvent(event);
+          } else if (event.getStatus() == EventStatus.STARTED) {
+            if (isOwner) {
+              processEvent(event);
+            } else {
+              scheduleEvent(eventId, MAX_EVENT_PROCESS_TIME_SEC, true);
+              isRescheduled = true;
+            }
+          } else {
+            LOG.info("Event {} is already cancelled or completed", event);
+          }
+        }
+      } finally {
+        if (!isRescheduled) {
+          futures.remove(eventId);
         }
       }
     }, delay, TimeUnit.SECONDS);
+    futures.put(eventId, future);
   }
 
   private void processEvent(Event event) {
@@ -128,25 +153,18 @@ public class Scheduler implements Consumer<Event> {
     event.setStatus(EventStatus.STARTED);
     if (eventSchedulerDao.save(event)) {
       event = eventSchedulerDao.load(Event.class, event.getId(), schedulerId, true);
-      updateEvent(event);
-      consumer.accept(event);
+      try {
+        consumer.accept(event);
+      } catch (Exception e) {
+        LOG.error(String.format("Exception in sending the event %s", event), e);
+      }
       event.setModifyTime(Instant.now().getEpochSecond());
       event.setStatus(EventStatus.ENDED);
       eventSchedulerDao.save(event);
-      events.remove(event.getId());
     } else {
       scheduleEvent(event.getId(), MAX_EVENT_PROCESS_TIME_SEC, true);
-      LOG.info("Another process has already taken this event {}", event.getId());
+      LOG.info("Another process has already taken this event {}", event);
       LOG.info("Waiting for it to complete");
     }
-  }
-
-  private void updateEvent(Event event) {
-    // Making weak reference work
-    events.put(
-        new UUID(
-            event.getId().getMostSignificantBits(),
-            event.getId().getLeastSignificantBits()),
-        event);
   }
 }
