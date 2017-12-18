@@ -6,11 +6,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.bytescheme.service.eventscheduler.domains.Event;
-import com.bytescheme.service.eventscheduler.domains.EventSchedulerDao;
+import com.bytescheme.service.eventscheduler.domains.SchedulerDao;
 import com.bytescheme.service.eventscheduler.domains.ScannerMetadata;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import com.google.common.util.concurrent.Service;
@@ -31,22 +34,22 @@ public class Scanner extends AbstractScheduledService {
   private final Consumer<Event> consumer;
 
   private final UUID schedulerId;
-  private final EventSchedulerDao eventSchedulerDao;
+  private final SchedulerDao schedulerDao;
 
   public Scanner(
       UUID schedulerId,
-      EventSchedulerDao eventSchedulerDao,
+      SchedulerDao eventSchedulerDao,
       Consumer<Event> consumer) {
     this.consumer = Objects.requireNonNull(consumer);
     this.schedulerId = Objects.requireNonNull(schedulerId);
-    this.eventSchedulerDao = Objects.requireNonNull(eventSchedulerDao);
+    this.schedulerDao = Objects.requireNonNull(eventSchedulerDao);
   }
 
   @Override
   protected void runOneIteration() throws Exception {
     try {
       LOG.info("Loading scanner meta data");
-      ScannerMetadata scannerMetadata = eventSchedulerDao
+      ScannerMetadata scannerMetadata = schedulerDao
           .load(ScannerMetadata.class, schedulerId, null, false);
       long currentTime = Instant.now().getEpochSecond();
       if (scannerMetadata == null) {
@@ -61,9 +64,9 @@ public class Scanner extends AbstractScheduledService {
       if (currentTime >= scannerMetadata.getScanTime()) {
         long endTime = currentTime + SCAN_INTERVAL_SEC;
         LOG.info("Scanning for events upto {} ...", endTime);
-        eventSchedulerDao.scanEvents(schedulerId, endTime, consumer);
+        schedulerDao.scanEvents(schedulerId, endTime, consumer);
         scannerMetadata.setScanTime(endTime);
-        eventSchedulerDao.save(scannerMetadata);
+        schedulerDao.save(scannerMetadata);
       }
     } catch (Exception e) {
       LOG.error("Exception while scanning...", e);
@@ -75,6 +78,12 @@ public class Scanner extends AbstractScheduledService {
     return Scheduler.newFixedDelaySchedule(0L, POLLING_INTERVAL_SEC, TimeUnit.SECONDS);
   }
 
+  @PostConstruct
+  public void start() {
+    super.startAsync();
+  }
+
+  @PreDestroy
   public void stop() {
     Service service = super.stopAsync();
     service.awaitTerminated();

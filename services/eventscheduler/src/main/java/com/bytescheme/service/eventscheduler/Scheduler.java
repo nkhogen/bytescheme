@@ -10,12 +10,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import javax.annotation.PreDestroy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.bytescheme.service.eventscheduler.domains.Event;
 import com.bytescheme.service.eventscheduler.domains.Event.EventStatus;
-import com.bytescheme.service.eventscheduler.domains.EventSchedulerDao;
+import com.bytescheme.service.eventscheduler.domains.SchedulerDao;
 import com.bytescheme.service.eventscheduler.domains.ScannerMetadata;
 import com.google.common.collect.Maps;
 
@@ -36,17 +38,21 @@ public class Scheduler implements Consumer<Event> {
   private final ScheduledExecutorService scheduledExecutorService = Executors
       .newScheduledThreadPool(THREAD_POOL_SIZE);
   private final Map<UUID, ScheduledFuture<?>> futures = Maps.newConcurrentMap();
-  private final EventSchedulerDao eventSchedulerDao;
+  private final SchedulerDao schedulerDao;
   private final UUID schedulerId;
   private final Consumer<Event> consumer;
 
   public Scheduler(
       UUID schedulerId,
-      EventSchedulerDao eventSchedulerDao,
+      SchedulerDao eventSchedulerDao,
       Consumer<Event> consumer) {
     this.schedulerId = Objects.requireNonNull(schedulerId);
-    this.eventSchedulerDao = Objects.requireNonNull(eventSchedulerDao);
+    this.schedulerDao = Objects.requireNonNull(eventSchedulerDao);
     this.consumer = Objects.requireNonNull(consumer);
+  }
+
+  public UUID getSchedulerId() {
+    return schedulerId;
   }
 
   @Override
@@ -66,45 +72,47 @@ public class Scheduler implements Consumer<Event> {
     scheduleEvent(event.getId(), delay, false);
   }
 
-  public void schedule(Event event) {
-    Objects.nonNull(event);
+  public boolean schedule(Event event) {
+    Objects.requireNonNull(event);
     long currentTime = Instant.now().getEpochSecond();
     event.setSchedulerId(schedulerId);
     event.setId(UUID.randomUUID());
     event.setCreateTime(currentTime);
     event.setModifyTime(event.getCreateTime());
     event.setStatus(EventStatus.SCHEDULED);
-    if (eventSchedulerDao.save(event)) {
-      while (true) {
-        boolean isChanged = false;
-        ScannerMetadata scannerMetadata = eventSchedulerDao
-            .load(ScannerMetadata.class, schedulerId, null, false);
-        if (scannerMetadata == null) {
-          scannerMetadata = new ScannerMetadata();
-          scannerMetadata.setId(schedulerId);
-          scannerMetadata.setScanTime(event.getTriggerTime());
-          isChanged = true;
-        } else if (scannerMetadata.getScanTime() > event.getTriggerTime()) {
-          scannerMetadata.setScanTime(event.getTriggerTime());
-          isChanged = true;
-        }
-        if (!isChanged) {
-          break;
-        }
-        if (eventSchedulerDao.save(scannerMetadata)) {
-          break;
-        }
+    if (!schedulerDao.save(event)) {
+      return false;
+    }
+    while (true) {
+      boolean isChanged = false;
+      ScannerMetadata scannerMetadata = schedulerDao
+          .load(ScannerMetadata.class, schedulerId, null, false);
+      if (scannerMetadata == null) {
+        scannerMetadata = new ScannerMetadata();
+        scannerMetadata.setId(schedulerId);
+        scannerMetadata.setScanTime(event.getTriggerTime());
+        isChanged = true;
+      } else if (scannerMetadata.getScanTime() > event.getTriggerTime()) {
+        scannerMetadata.setScanTime(event.getTriggerTime());
+        isChanged = true;
+      }
+      if (!isChanged) {
+        break;
+      }
+      if (schedulerDao.save(scannerMetadata)) {
+        break;
       }
     }
+    return true;
   }
 
   public boolean cancel(UUID eventId) {
-    Event event = eventSchedulerDao.load(Event.class, eventId, schedulerId, false);
+    Event event = schedulerDao.load(Event.class, eventId, schedulerId, false);
     if (event == null) {
       return false;
     }
     event.setStatus(EventStatus.CANCELLED);
-    if (!eventSchedulerDao.save(event)) {
+    if (!schedulerDao.save(event)) {
       return false;
     }
     ScheduledFuture<?> future = futures.get(event.getId());
@@ -114,6 +122,7 @@ public class Scheduler implements Consumer<Event> {
     return true;
   }
 
+  @PreDestroy
   public void stop() {
     scheduledExecutorService.shutdown();
   }
@@ -122,7 +131,7 @@ public class Scheduler implements Consumer<Event> {
     ScheduledFuture<?> future = scheduledExecutorService.schedule(() -> {
       boolean isRescheduled = false;
       try {
-        Event event = eventSchedulerDao.load(Event.class, eventId, schedulerId, true);
+        Event event = schedulerDao.load(Event.class, eventId, schedulerId, true);
         if (event == null) {
           LOG.info("Event {} is not found", eventId);
         } else {
@@ -151,8 +160,8 @@ public class Scheduler implements Consumer<Event> {
   private void processEvent(Event event) {
     event.setModifyTime(Instant.now().getEpochSecond());
     event.setStatus(EventStatus.STARTED);
-    if (eventSchedulerDao.save(event)) {
-      event = eventSchedulerDao.load(Event.class, event.getId(), schedulerId, true);
+    if (schedulerDao.save(event)) {
+      event = schedulerDao.load(Event.class, event.getId(), schedulerId, true);
       try {
         consumer.accept(event);
       } catch (Exception e) {
@@ -160,7 +169,7 @@ public class Scheduler implements Consumer<Event> {
       }
       event.setModifyTime(Instant.now().getEpochSecond());
       event.setStatus(EventStatus.ENDED);
-      eventSchedulerDao.save(event);
+      schedulerDao.save(event);
     } else {
       scheduleEvent(event.getId(), MAX_EVENT_PROCESS_TIME_SEC, true);
       LOG.info("Another process has already taken this event {}", event);

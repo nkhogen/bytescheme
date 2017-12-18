@@ -25,12 +25,12 @@ import com.google.api.client.util.ExponentialBackOff;
  * @author Naorem Khogendro Singh
  *
  */
-public class EventSchedulerDao {
-  private static final Logger LOG = LoggerFactory.getLogger(EventSchedulerDao.class);
+public class SchedulerDao {
+  private static final Logger LOG = LoggerFactory.getLogger(SchedulerDao.class);
 
   private final DynamoDBMapper dbMapper;
 
-  public EventSchedulerDao(DynamoDBMapper dbMapper) {
+  public SchedulerDao(DynamoDBMapper dbMapper) {
     this.dbMapper = Objects.requireNonNull(dbMapper);
   }
 

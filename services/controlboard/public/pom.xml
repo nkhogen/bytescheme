@@ -34,6 +34,11 @@
     </dependency>
     <dependency>
       <groupId>com.bytescheme.services</groupId>
+      <artifactId>bytescheme-eventscheduler</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.bytescheme.services</groupId>
       <artifactId>bytescheme-controlboard-common</artifactId>
       <version>${project.version}</version>
     </dependency>

@@ -1,5 +1,7 @@
 package com.bytescheme.service.controlboard;
 
+import java.util.UUID;
+
 import javax.annotation.PostConstruct;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -22,6 +24,7 @@ public class ServiceProperties {
   private String sshKeysDir;
   private String authenticationJsonFile;
   private String authorizationJsonFile;
+  private UUID schedulerId;
   private boolean enableMock;
   private boolean enableFileConfig;
 
@@ -45,8 +48,8 @@ public class ServiceProperties {
     if (authorizationJsonFile == null) {
       authorizationJsonFile = "/security/auth/authorization.json";
     }
-    Preconditions.checkNotNull(!Strings.isNullOrEmpty(googleClientId),
-        "Invalid Google client ID");
+    Preconditions
+        .checkNotNull(!Strings.isNullOrEmpty(googleClientId), "Invalid Google client ID");
   }
 
   public String getBaseDir() {
@@ -103,6 +106,14 @@ public class ServiceProperties {
 
   public void setAuthorizationJsonFile(String authorizationJsonFile) {
     this.authorizationJsonFile = authorizationJsonFile;
+  }
+
+  public UUID getSchedulerId() {
+    return schedulerId;
+  }
+
+  public void setSchedulerId(UUID schedulerId) {
+    this.schedulerId = schedulerId;
   }
 
   public boolean isEnableMock() {

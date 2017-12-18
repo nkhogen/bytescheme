@@ -6,6 +6,7 @@ import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.security.PublicKey;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,6 +21,7 @@ import com.bytescheme.rpc.core.RemoteMethodCallException;
 import com.bytescheme.rpc.core.RemoteObject;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
+import com.bytescheme.service.controlboard.common.models.DeviceEventScheduler;
 import com.bytescheme.service.controlboard.common.remoteobjects.BaseMockControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
@@ -40,6 +42,7 @@ public class RootImpl implements Root {
   private static final int CLIENT_RETRY_LIMIT = 3;
   private static final String TARGET_USER = "controlboard";
   private final Function<String, Set<ObjectEndpoint>> objectEndpointProvider;
+  private DeviceEventScheduler deviceEventScheduler;
 
   private final ConcurrentHashMap<String, RemoteObjectClient> clients = new ConcurrentHashMap<>(
       Collections.emptyMap());
@@ -65,21 +68,14 @@ public class RootImpl implements Root {
 
   @Override
   public ControlBoard getControlBoard(String user) {
-    Set<ObjectEndpoint> objectEndpoints = objectEndpointProvider.apply(user);
-    // Support for only one
-    ObjectEndpoint objectEndpoint = Iterables.getFirst(objectEndpoints, null);
-    if (objectEndpoint == null) {
-      return null;
-    }
-    Preconditions.checkNotNull(objectEndpoint.getObjectId());
-    Preconditions.checkNotNull(objectEndpoint.getEndpoint());
+    ObjectEndpoint objectEndpoint = getObjectEndPoint(user);
     UUID objectId = UUID.fromString(objectEndpoint.getObjectId());
     try {
       if (enableMock) {
         return new BaseMockControlBoard(objectId);
       }
       ControlBoard remoteControlBoard = createRemoteObject(ControlBoard.class, objectId,
-          objectEndpoint.getEndpoint(), objectEndpoint.getPublicKey());
+          objectEndpoint.getEndpoint(), user, objectEndpoint.getPublicKey());
       return new DelegateControlBoardImpl(objectId, remoteControlBoard);
     } catch (Exception e) {
       throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
@@ -87,11 +83,20 @@ public class RootImpl implements Root {
     }
   }
 
+  @Override
+  public DeviceEventScheduler getDeviceEventScheduler() {
+    return deviceEventScheduler;
+  }
+
+  public void setDeviceEventScheduler(DeviceEventScheduler deviceEventScheduler) {
+    this.deviceEventScheduler = deviceEventScheduler;
+  }
+
   private <T extends RemoteObject> T createRemoteObject(Class<T> clazz, UUID objectId,
-      String endpoint, PublicKey publicKey) {
+      String endpoint, String user, PublicKey publicKey) {
     return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { clazz },
         (proxy, method, args) -> {
-          return invokeMethod(clazz, objectId, method, args, endpoint, publicKey);
+          return invokeMethod(clazz, objectId, method, args, endpoint, user, publicKey);
         }));
   }
 
@@ -100,7 +105,12 @@ public class RootImpl implements Root {
    * hood when a method of the remote object is invoked.
    */
   private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId, Method method,
-      Object[] args, String endpoint, PublicKey publicKey) throws MalformedURLException {
+      Object[] args, String endpoint, String user, PublicKey publicKey) throws MalformedURLException {
+    ObjectEndpoint objectEndpoint = getObjectEndPoint(user);
+    // Do not allow authenticated users to replace the UUID.
+    if (!objectId.toString().equals(objectEndpoint.getObjectId())) {
+      throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE, "User is not authorized");
+    }
     int retry = 0;
     int parameterCount = (args == null) ? 0 : 1;
     do {
@@ -170,4 +180,15 @@ public class RootImpl implements Root {
         "Retry limit exceeded in client call");
   }
 
+  private ObjectEndpoint getObjectEndPoint(String user) {
+    Set<ObjectEndpoint> objectEndpoints = objectEndpointProvider.apply(Objects.requireNonNull(user));
+    // Support for only one
+    ObjectEndpoint objectEndpoint = Iterables.getFirst(objectEndpoints, null);
+    if (objectEndpoint == null) {
+      return null;
+    }
+    Preconditions.checkNotNull(objectEndpoint.getObjectId());
+    Preconditions.checkNotNull(objectEndpoint.getEndpoint());
+    return objectEndpoint;
+  }
 }
