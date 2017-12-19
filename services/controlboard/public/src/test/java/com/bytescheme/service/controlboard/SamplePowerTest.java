@@ -29,7 +29,7 @@ public class SamplePowerTest {
     try {
       password = CryptoUtils.kmsEncrypt(user);
       client = clientBuilder.login(user, password);
-      Root root = client.createRemoteObject(Root.class, Root.OBJECT_ID);
+      Root root = client.createRemoteObject(Root.class, Constants.ROOT_OBJECT_ID);
       ControlBoard controlBoard = root.getControlBoard();
       DeviceStatus deviceStatus = new DeviceStatus(112, "Dummy");
       for (int i = 0; i < 20; i++) {

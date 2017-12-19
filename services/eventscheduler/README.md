@@ -1,1 +1,1 @@
-WIP
+The event scheduler can be run on more than once instance for HA. Whichever process triggering the event disables the others from duplicating. The thread triggering the event can be interrupted if it does not complete within specified time.

@@ -77,7 +77,7 @@ public class Controller implements Speechlet {
       if ("SetStatus".equals(intentName)) {
         Slot deviceSlot = intent.getSlot("DEVICE");
         Slot statusSlot = intent.getSlot("STATUS");
-        Root root = client.createRemoteObject(Root.class, Root.OBJECT_ID);
+        Root root = client.createRemoteObject(Root.class, Constants.ROOT_OBJECT_ID);
         ControlBoard controlBoard = root.getControlBoard();
         if (controlBoard == null) {
           return sendSpeechResponse("No controlboard found for the user");

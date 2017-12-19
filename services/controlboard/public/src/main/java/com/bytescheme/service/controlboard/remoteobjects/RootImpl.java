@@ -1,5 +1,7 @@
 package com.bytescheme.service.controlboard.remoteobjects;
 
+import static com.bytescheme.service.controlboard.common.Constants.ROOT_OBJECT_ID;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -70,7 +72,7 @@ public class RootImpl implements Root {
 
   @Override
   public UUID getObjectId() {
-    return OBJECT_ID;
+    return ROOT_OBJECT_ID;
   }
 
   @Override
@@ -116,8 +118,9 @@ public class RootImpl implements Root {
    * This method takes care of auto-login in case of session expiry under the
    * hood when a method of the remote object is invoked.
    */
-  private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId, Method method,
-      Object[] args, String endpoint, PublicKey publicKey) throws MalformedURLException {
+  private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId,
+      Method method, Object[] args, String endpoint, PublicKey publicKey)
+      throws MalformedURLException {
     int retry = 0;
     int parameterCount = (args == null) ? 0 : 1;
     do {
@@ -131,7 +134,8 @@ public class RootImpl implements Root {
           if (client == null) {
             RemoteObjectClientBuilder clientBuilder = new RemoteObjectClientBuilder(
                 new HttpClientRequestHandler(endpoint));
-            client = clientBuilder.login(TARGET_USER, CryptoUtils.encrypt(TARGET_USER, publicKey));
+            client = clientBuilder
+                .login(TARGET_USER, CryptoUtils.encrypt(TARGET_USER, publicKey));
             clients.put(endpoint, client);
           }
         }

@@ -28,7 +28,7 @@ public class SampleSchedulerTest {
     try {
       password = CryptoUtils.kmsEncrypt(user);
       client = clientBuilder.login(user, password);
-      Root root = client.createRemoteObject(Root.class, Root.OBJECT_ID);
+      Root root = client.createRemoteObject(Root.class, Constants.ROOT_OBJECT_ID);
       DeviceEventScheduler eventScheduler = root.getDeviceEventScheduler();
       DeviceEventDetails deviceEventDetails = new DeviceEventDetails();
       deviceEventDetails.setUser(user);

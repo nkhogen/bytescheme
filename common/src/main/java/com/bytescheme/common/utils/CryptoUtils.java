@@ -1,7 +1,5 @@
 package com.bytescheme.common.utils;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -36,7 +34,7 @@ import com.google.common.base.Strings;
  * @author Naorem Khogendro Singh
  *
  */
-public class CryptoUtils {
+public final class CryptoUtils {
 
   public static String KEY_ALIAS = "alias/authentication-key";
 
@@ -138,7 +136,7 @@ public class CryptoUtils {
   }
 
   public static String kmsEncrypt(String plaintext) {
-    checkNotNull(plaintext);
+    Preconditions.checkNotNull(plaintext);
     AWSKMS kmsClient = AWSKMSClientBuilder.standard().withRegion(Regions.US_WEST_1)
         .build();
     EncryptRequest request = new EncryptRequest();
@@ -153,7 +151,7 @@ public class CryptoUtils {
   }
 
   public static String kmsDecrypt(String cipher) {
-    checkNotNull(cipher);
+    Preconditions.checkNotNull(cipher);
     AWSKMS kmsClient = AWSKMSClientBuilder.standard().withRegion(Regions.US_WEST_1)
         .build();
     DecryptRequest request = new DecryptRequest();
