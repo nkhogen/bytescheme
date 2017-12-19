@@ -45,7 +45,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 		$scope.user = getCookie("user");
 		$scope.email = getCookie("email");
 		var payload = createHttpPayload($scope.session, globals.root_object_id,
-				"getControlBoard", [$scope.email]);
+				"getControlBoard", null);
 		var request = createPostRequest(globals.rpc_url, payload);
 		console.log('Calling getControlBoard');
 		$http(request).then(function(response) {

@@ -7,23 +7,30 @@ import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.core.HttpClientRequestHandler;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
+import com.bytescheme.service.controlboard.common.Constants;
 import com.bytescheme.service.controlboard.common.models.DeviceStatus;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
 
-public class SampleTest {
-  private static final String ENDPOINT = "https://controller.bytescheme.com/rpc";
-  private static RemoteObjectClientBuilder clientBuilder;
+/**
+ * Sample power on/off test.
+ *
+ * @author Naorem Khogendro Singh
+ *
+ */
+public class SamplePowerTest {
 
   public static void main(String[] args) throws MalformedURLException {
-    clientBuilder = new RemoteObjectClientBuilder(new HttpClientRequestHandler(ENDPOINT));
+    RemoteObjectClientBuilder clientBuilder = new RemoteObjectClientBuilder(
+        new HttpClientRequestHandler(Constants.PUBLIC_ENDPOINT));
+    RemoteObjectClient client = null;
     String user = "abc@gmail.com";
     String password = null;
     try {
       password = CryptoUtils.kmsEncrypt(user);
-      RemoteObjectClient client = clientBuilder.login(user, password);
+      client = clientBuilder.login(user, password);
       Root root = client.createRemoteObject(Root.class, Root.OBJECT_ID);
-      ControlBoard controlBoard = root.getControlBoard(user);
+      ControlBoard controlBoard = root.getControlBoard();
       DeviceStatus deviceStatus = new DeviceStatus(112, "Dummy");
       for (int i = 0; i < 20; i++) {
         deviceStatus.setPowerOn(!deviceStatus.isPowerOn());
@@ -32,6 +39,10 @@ public class SampleTest {
       }
     } catch (Exception e) {
       e.printStackTrace();
+    } finally {
+      if (client != null) {
+        client.logout();
+      }
     }
   }
 }

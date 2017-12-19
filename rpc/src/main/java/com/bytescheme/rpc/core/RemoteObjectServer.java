@@ -244,24 +244,17 @@ public class RemoteObjectServer implements RemoteObjectListener {
       LOG.info("Security provider not configured");
       return;
     }
-    RemoteMethodCallException exception = null;
     try {
       Authentication authentication = securityProvider.authenticate(request);
-      if (securityProvider.authorize(authentication, request)) {
-        return;
-      }
+      securityProvider.authorize(authentication, request);
     } catch (RemoteMethodCallException e) {
-      exception = e;
+      throw e;
     } catch (Exception e) {
       String msg = String.format("Error occurred in security check for request ID %s",
           request.getRequestId());
       LOG.error(msg, e);
-      exception = new RemoteMethodCallException(Constants.SERVER_ERROR_CODE, msg, e);
+      throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE, msg, e);
     }
-    if (exception != null) {
-      throw exception;
-    }
-    throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE, "Unauthorized user");
   }
 
   private class ClassMetaData {

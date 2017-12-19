@@ -114,8 +114,10 @@ public class SessionManager {
     return session;
   }
 
-  public boolean validateSession(String sessionId) {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(sessionId));
+  public boolean isSessionValid(String sessionId) {
+    if (sessionId == null) {
+      return false;
+    }
     return sessionsMap.containsKey(sessionId);
   }
 

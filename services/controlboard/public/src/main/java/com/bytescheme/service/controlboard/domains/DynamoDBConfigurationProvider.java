@@ -2,6 +2,7 @@ package com.bytescheme.service.controlboard.domains;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -15,7 +16,6 @@ import com.bytescheme.common.paths.Node;
 import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.security.AuthData;
 import com.bytescheme.service.controlboard.ConfigurationProvider;
-import com.google.api.client.repackaged.com.google.common.base.Preconditions;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -29,12 +29,11 @@ import com.google.common.collect.Sets;
  *
  */
 public class DynamoDBConfigurationProvider implements ConfigurationProvider {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(DynamoDBConfigurationProvider.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DynamoDBConfigurationProvider.class);
   private final DynamoDBMapper dbMapper;
 
   public DynamoDBConfigurationProvider(DynamoDBMapper dbMapper) {
-    this.dbMapper = Preconditions.checkNotNull(dbMapper, "Invalid Dynamo DB mapper");
+    this.dbMapper = Objects.requireNonNull(dbMapper, "Invalid Dynamo DB mapper");
   }
 
   @Override
@@ -45,7 +44,7 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
       if (entity == null) {
         return null;
       }
-      // TODO decryption
+      // TODO decryption. Password is dummy for now because Google manages it.
       AuthData authData = new AuthData();
       authData.setPassword(entity.getPassword());
       Set<String> roles = Sets.newHashSet();
@@ -68,8 +67,7 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
       hashKey.setObjectId(objectId);
       DynamoDBQueryExpression<ObjectRoles> queryExpression = new DynamoDBQueryExpression<ObjectRoles>()
           .withHashKeyValues(hashKey);
-      QueryResultPage<ObjectRoles> result = dbMapper.queryPage(ObjectRoles.class,
-          queryExpression);
+      QueryResultPage<ObjectRoles> result = dbMapper.queryPage(ObjectRoles.class, queryExpression);
       List<ObjectRoles> objectRoles = result.getResults();
       if (CollectionUtils.isEmpty(objectRoles)) {
         return null;
@@ -90,18 +88,18 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
       hashKey.setUser(user);
       DynamoDBQueryExpression<UserObjects> queryExpression = new DynamoDBQueryExpression<UserObjects>()
           .withHashKeyValues(hashKey);
-      QueryResultPage<UserObjects> result = dbMapper.queryPage(UserObjects.class,
-          queryExpression);
+      QueryResultPage<UserObjects> result = dbMapper.queryPage(UserObjects.class, queryExpression);
       List<UserObjects> userObjects = result.getResults();
-      ImmutableSet.Builder<ObjectEndpoint> objectEndpointsBuilder = ImmutableSet
-          .builder();
+      ImmutableSet.Builder<ObjectEndpoint> objectEndpointsBuilder = ImmutableSet.builder();
       if (CollectionUtils.isEmpty(userObjects)) {
         return objectEndpointsBuilder.build();
       }
       userObjects.forEach(obj -> {
         Endpoints endpoints = dbMapper.load(Endpoints.class, obj.getObjectId());
-        objectEndpointsBuilder
-            .add(new ObjectEndpoint(endpoints.getObjectId(), endpoints.getEndpoint(),
+        objectEndpointsBuilder.add(
+            new ObjectEndpoint(
+                endpoints.getObjectId(),
+                endpoints.getEndpoint(),
                 CryptoUtils.getPublicKey(endpoints.getSshKey().trim().getBytes())));
       });
       return objectEndpointsBuilder.build();

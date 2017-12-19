@@ -16,6 +16,7 @@ import com.bytescheme.rpc.core.RemoteObjectServer;
 import com.bytescheme.rpc.security.AWSAuthenticationProvider;
 import com.bytescheme.rpc.security.GoogleAuthenticationProvider;
 import com.bytescheme.rpc.security.SecurityProvider;
+import com.bytescheme.service.controlboard.common.models.DeviceEventScheduler;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
 import com.bytescheme.service.controlboard.domains.DynamoDBConfigurationProvider;
 import com.bytescheme.service.controlboard.remoteobjects.DeviceEventConsumer;
@@ -36,11 +37,23 @@ public class ServiceConfiguration {
   @Autowired
   private ServiceProperties serviceProperties;
 
+  @Bean
+  public DynamoDBMapper dynamodbMapper() {
+    return new DynamoDBMapper(AmazonDynamoDBClientBuilder.defaultClient());
+  }
+
+  @Autowired
+  @Bean
+  public ConfigurationProvider configurationProvider(DynamoDBMapper dynamodbMapper) {
+    return serviceProperties.isEnableFileConfig()
+        ? new DefaultConfigurationProvider(serviceProperties)
+        : new DynamoDBConfigurationProvider(dynamodbMapper);
+  }
+
   @Autowired
   @Bean
   public GoogleAuthenticationProvider googleAuthenticationProvider(
-      ConfigurationProvider configurationProvider)
-      throws IOException, GeneralSecurityException {
+      ConfigurationProvider configurationProvider) throws IOException, GeneralSecurityException {
     return new GoogleAuthenticationProvider(
         serviceProperties.getGoogleClientId(),
         configurationProvider.getAuthenticationDataProvider());
@@ -50,8 +63,7 @@ public class ServiceConfiguration {
   @Bean
   public AWSAuthenticationProvider awsAuthenticationProvider(
       ConfigurationProvider configurationProvider) {
-    return new AWSAuthenticationProvider(
-        configurationProvider.getAuthenticationDataProvider());
+    return new AWSAuthenticationProvider(configurationProvider.getAuthenticationDataProvider());
   }
 
   @Autowired
@@ -77,35 +89,30 @@ public class ServiceConfiguration {
 
   @Autowired
   @Bean
-  public RemoteObjectServer remoteObjectServer(SecurityProvider securityProvider)
-      throws Exception {
+  public RemoteObjectServer remoteObjectServer(SecurityProvider securityProvider) throws Exception {
     return new RemoteObjectServer(true, securityProvider);
   }
 
+  @Autowired
   @Bean
-  public ConfigurationProvider configurationProvider() {
-    return serviceProperties.isEnableFileConfig()
-        ? new DefaultConfigurationProvider(serviceProperties)
-        : new DynamoDBConfigurationProvider(
-            new DynamoDBMapper(AmazonDynamoDBClientBuilder.defaultClient()));
+  public DeviceEventConsumer deviceEventConsumer() throws MalformedURLException {
+    return new DeviceEventConsumer();
   }
 
+  @Autowired
   @Bean
-  public SchedulerDao schedulerDao() {
-    DynamoDBMapper dynamodbMapper = new DynamoDBMapper(
-        AmazonDynamoDBClientBuilder.defaultClient());
+  public SchedulerDao schedulerDao(DynamoDBMapper dynamodbMapper) {
     return new SchedulerDao(dynamodbMapper);
   }
 
   @Autowired
   @Bean
-  public Scheduler scheduler(RootImpl root, SchedulerDao schedulerDao)
-      throws MalformedURLException {
-    Scheduler scheduler = new Scheduler(
-        serviceProperties.getSchedulerId(),
-        schedulerDao,
-        new DeviceEventConsumer(root));
-    root.setDeviceEventScheduler(new DeviceEventSchedulerImpl(scheduler));
-    return scheduler;
+  public Scheduler scheduler(SchedulerDao schedulerDao, DeviceEventConsumer deviceEventConsumer) {
+    return new Scheduler(serviceProperties.getSchedulerId(), schedulerDao, deviceEventConsumer);
+  }
+
+  @Bean
+  public DeviceEventScheduler deviceEventScheduler() {
+    return new DeviceEventSchedulerImpl();
   }
 }

@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
@@ -41,6 +42,7 @@ public class Scheduler implements Consumer<Event> {
   private final SchedulerDao schedulerDao;
   private final UUID schedulerId;
   private final Consumer<Event> consumer;
+  private final Scanner scanner;
 
   public Scheduler(
       UUID schedulerId,
@@ -49,6 +51,7 @@ public class Scheduler implements Consumer<Event> {
     this.schedulerId = Objects.requireNonNull(schedulerId);
     this.schedulerDao = Objects.requireNonNull(eventSchedulerDao);
     this.consumer = Objects.requireNonNull(consumer);
+    this.scanner = new Scanner(schedulerId, eventSchedulerDao, this);
   }
 
   public UUID getSchedulerId() {
@@ -122,8 +125,14 @@ public class Scheduler implements Consumer<Event> {
     return true;
   }
 
+  @PostConstruct
+  public void start() {
+    scanner.startAsync();
+  }
+
   @PreDestroy
   public void stop() {
+    scanner.stop();
     scheduledExecutorService.shutdown();
   }
 

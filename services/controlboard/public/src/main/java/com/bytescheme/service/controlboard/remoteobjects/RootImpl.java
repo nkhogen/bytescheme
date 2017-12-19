@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.core.Constants;
@@ -21,6 +22,7 @@ import com.bytescheme.rpc.core.RemoteMethodCallException;
 import com.bytescheme.rpc.core.RemoteObject;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
+import com.bytescheme.rpc.security.SecurityProvider;
 import com.bytescheme.service.controlboard.common.models.DeviceEventScheduler;
 import com.bytescheme.service.controlboard.common.remoteobjects.BaseMockControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
@@ -42,6 +44,11 @@ public class RootImpl implements Root {
   private static final int CLIENT_RETRY_LIMIT = 3;
   private static final String TARGET_USER = "controlboard";
   private final Function<String, Set<ObjectEndpoint>> objectEndpointProvider;
+
+  @Autowired
+  private SecurityProvider securityProvider;
+
+  @Autowired
   private DeviceEventScheduler deviceEventScheduler;
 
   private final ConcurrentHashMap<String, RemoteObjectClient> clients = new ConcurrentHashMap<>(
@@ -49,8 +56,8 @@ public class RootImpl implements Root {
   private boolean enableMock = false;
 
   public RootImpl(Function<String, Set<ObjectEndpoint>> objectEndpointProvider) {
-    this.objectEndpointProvider = Preconditions.checkNotNull(objectEndpointProvider,
-        "Invalid object endpoint provider");
+    this.objectEndpointProvider = Preconditions
+        .checkNotNull(objectEndpointProvider, "Invalid object endpoint provider");
   }
 
   public boolean isEnableMock() {
@@ -67,19 +74,25 @@ public class RootImpl implements Root {
   }
 
   @Override
-  public ControlBoard getControlBoard(String user) {
+  public ControlBoard getControlBoard() {
+    String user = securityProvider.getCurrentUser();
     ObjectEndpoint objectEndpoint = getObjectEndPoint(user);
     UUID objectId = UUID.fromString(objectEndpoint.getObjectId());
     try {
       if (enableMock) {
         return new BaseMockControlBoard(objectId);
       }
-      ControlBoard remoteControlBoard = createRemoteObject(ControlBoard.class, objectId,
-          objectEndpoint.getEndpoint(), user, objectEndpoint.getPublicKey());
+      ControlBoard remoteControlBoard = createRemoteObject(
+          ControlBoard.class,
+          objectId,
+          objectEndpoint.getEndpoint(),
+          objectEndpoint.getPublicKey());
       return new DelegateControlBoardImpl(objectId, remoteControlBoard);
     } catch (Exception e) {
-      throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
-          "Failed to create the control board", e);
+      throw new RemoteMethodCallException(
+          Constants.SERVER_ERROR_CODE,
+          "Failed to create the control board",
+          e);
     }
   }
 
@@ -88,16 +101,15 @@ public class RootImpl implements Root {
     return deviceEventScheduler;
   }
 
-  public void setDeviceEventScheduler(DeviceEventScheduler deviceEventScheduler) {
-    this.deviceEventScheduler = deviceEventScheduler;
-  }
-
   private <T extends RemoteObject> T createRemoteObject(Class<T> clazz, UUID objectId,
-      String endpoint, String user, PublicKey publicKey) {
-    return clazz.cast(Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { clazz },
-        (proxy, method, args) -> {
-          return invokeMethod(clazz, objectId, method, args, endpoint, user, publicKey);
-        }));
+      String endpoint, PublicKey publicKey) {
+    return clazz.cast(
+        Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class<?>[] { clazz },
+            (proxy, method, args) -> {
+              return invokeMethod(clazz, objectId, method, args, endpoint, publicKey);
+            }));
   }
 
   /*
@@ -105,12 +117,7 @@ public class RootImpl implements Root {
    * hood when a method of the remote object is invoked.
    */
   private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId, Method method,
-      Object[] args, String endpoint, String user, PublicKey publicKey) throws MalformedURLException {
-    ObjectEndpoint objectEndpoint = getObjectEndPoint(user);
-    // Do not allow authenticated users to replace the UUID.
-    if (!objectId.toString().equals(objectEndpoint.getObjectId())) {
-      throw new RemoteMethodCallException(Constants.AUTHORIZATION_ERROR_CODE, "User is not authorized");
-    }
+      Object[] args, String endpoint, PublicKey publicKey) throws MalformedURLException {
     int retry = 0;
     int parameterCount = (args == null) ? 0 : 1;
     do {
@@ -162,33 +169,42 @@ public class RootImpl implements Root {
               throw exception;
             }
           } else {
-            throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
-                "Exception in remote method invocation", e.getTargetException());
+            throw new RemoteMethodCallException(
+                Constants.SERVER_ERROR_CODE,
+                "Exception in remote method invocation",
+                e.getTargetException());
           }
         } catch (Exception e) {
           LOG.error("Error occurred in delegated method call", e);
-          throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
-              "Exception in remote method invocation", e);
+          throw new RemoteMethodCallException(
+              Constants.SERVER_ERROR_CODE,
+              "Exception in remote method invocation",
+              e);
         }
       }
     } while (retry < CLIENT_RETRY_LIMIT);
     if (retry == 0) {
-      throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE, String.format(
-          "Method %s:%d not found in class %s", method.getName(), parameterCount, clazz.getName()));
+      throw new RemoteMethodCallException(
+          Constants.SERVER_ERROR_CODE,
+          String.format(
+              "Method %s:%d not found in class %s",
+              method.getName(),
+              parameterCount,
+              clazz.getName()));
     }
-    throw new RemoteMethodCallException(Constants.SERVER_ERROR_CODE,
+    throw new RemoteMethodCallException(
+        Constants.SERVER_ERROR_CODE,
         "Retry limit exceeded in client call");
   }
 
   private ObjectEndpoint getObjectEndPoint(String user) {
-    Set<ObjectEndpoint> objectEndpoints = objectEndpointProvider.apply(Objects.requireNonNull(user));
+    Set<ObjectEndpoint> objectEndpoints = objectEndpointProvider
+        .apply(Objects.requireNonNull(user));
     // Support for only one
-    ObjectEndpoint objectEndpoint = Iterables.getFirst(objectEndpoints, null);
-    if (objectEndpoint == null) {
-      return null;
-    }
-    Preconditions.checkNotNull(objectEndpoint.getObjectId());
-    Preconditions.checkNotNull(objectEndpoint.getEndpoint());
+    ObjectEndpoint objectEndpoint = Objects
+        .requireNonNull(Iterables.getFirst(objectEndpoints, null));
+    Objects.requireNonNull(objectEndpoint.getObjectId());
+    Objects.requireNonNull(objectEndpoint.getEndpoint());
     return objectEndpoint;
   }
 }

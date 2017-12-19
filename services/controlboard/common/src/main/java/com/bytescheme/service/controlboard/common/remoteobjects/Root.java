@@ -15,7 +15,7 @@ import com.bytescheme.service.controlboard.common.models.DeviceEventScheduler;
 public interface Root extends RemoteObject {
   public static final UUID OBJECT_ID = new UUID(0L, 0L);
 
-	ControlBoard getControlBoard(String user);
+	ControlBoard getControlBoard();
 
 	DeviceEventScheduler getDeviceEventScheduler();
 }

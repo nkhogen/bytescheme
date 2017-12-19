@@ -2,6 +2,7 @@ package com.bytescheme.service.controlboard;
 
 import java.net.MalformedURLException;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,7 @@ import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.core.HttpClientRequestHandler;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
+import com.bytescheme.service.controlboard.common.Constants;
 import com.bytescheme.service.controlboard.common.models.DeviceStatus;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
@@ -35,13 +37,13 @@ import com.bytescheme.service.controlboard.common.remoteobjects.Root;
  */
 public class Controller implements Speechlet {
   private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
-  private static final String ENDPOINT = "https://controller.bytescheme.com/rpc";
 
   private final RemoteObjectClientBuilder clientBuilder;
 
   public Controller() {
     try {
-      this.clientBuilder = new RemoteObjectClientBuilder(new HttpClientRequestHandler(ENDPOINT));
+      this.clientBuilder = new RemoteObjectClientBuilder(
+          new HttpClientRequestHandler(Constants.PUBLIC_ENDPOINT));
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
@@ -66,20 +68,17 @@ public class Controller implements Speechlet {
       return sendSpeechResponse("Key encryption failed ");
     }
     try {
-      client = clientBuilder.login(userId, password);
+      client = Objects.requireNonNull(clientBuilder.login(userId, password));
     } catch (Exception e) {
       LOG.info("Exception occurred in login", e);
       return sendSpeechResponse("Login failed ");
-    }
-    if (client == null) {
-      return sendSpeechResponse("Login failed");
     }
     try {
       if ("SetStatus".equals(intentName)) {
         Slot deviceSlot = intent.getSlot("DEVICE");
         Slot statusSlot = intent.getSlot("STATUS");
         Root root = client.createRemoteObject(Root.class, Root.OBJECT_ID);
-        ControlBoard controlBoard = root.getControlBoard(userId);
+        ControlBoard controlBoard = root.getControlBoard();
         if (controlBoard == null) {
           return sendSpeechResponse("No controlboard found for the user");
         }
@@ -91,8 +90,9 @@ public class Controller implements Speechlet {
         }
         boolean deviceStatus = "ON".equalsIgnoreCase(statusSlot.getValue());
         if (deviceStatus == targetDevice.isPowerOn()) {
-          return sendSpeechResponse(String.format("%s is already %s", targetDevice.getTag(),
-              deviceStatus ? "ON" : "OFF"));
+          return sendSpeechResponse(
+              String
+                  .format("%s is already %s", targetDevice.getTag(), deviceStatus ? "ON" : "OFF"));
         }
         targetDevice.setPowerOn(deviceStatus);
         controlBoard.changePowerStatus(targetDevice);
@@ -135,11 +135,11 @@ public class Controller implements Speechlet {
 
   // Finds the closest tag match in order.
   private DeviceStatus findClosestInOrder(List<DeviceStatus> devices, String searchWord) {
-    int maxMatchCount = 1;
+    int maxMatchCount = 0;
     DeviceStatus targetDevice = null;
+    String[] searchTokens = searchWord.split("[ ]");
     for (DeviceStatus device : devices) {
       String[] tagTokens = device.getTag().split("[ ]");
-      String[] searchTokens = searchWord.split("[ ]");
       int tagTokenPos = 0;
       int matchCount = 0;
       for (String searchToken : searchTokens) {
@@ -148,12 +148,11 @@ public class Controller implements Speechlet {
         }
         int index = tagTokenPos;
         while (index < tagTokens.length) {
-          if (tagTokens[index].equalsIgnoreCase(searchToken)) {
+          if (tagTokens[index++].equalsIgnoreCase(searchToken)) {
             matchCount++;
-            tagTokenPos = index + 1;
+            tagTokenPos = index;
             break;
           }
-          index++;
         }
       }
       if (maxMatchCount < matchCount) {

@@ -6,15 +6,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.bytescheme.service.eventscheduler.domains.Event;
-import com.bytescheme.service.eventscheduler.domains.SchedulerDao;
 import com.bytescheme.service.eventscheduler.domains.ScannerMetadata;
+import com.bytescheme.service.eventscheduler.domains.SchedulerDao;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import com.google.common.util.concurrent.Service;
 
@@ -36,10 +33,7 @@ public class Scanner extends AbstractScheduledService {
   private final UUID schedulerId;
   private final SchedulerDao schedulerDao;
 
-  public Scanner(
-      UUID schedulerId,
-      SchedulerDao eventSchedulerDao,
-      Consumer<Event> consumer) {
+  public Scanner(UUID schedulerId, SchedulerDao eventSchedulerDao, Consumer<Event> consumer) {
     this.consumer = Objects.requireNonNull(consumer);
     this.schedulerId = Objects.requireNonNull(schedulerId);
     this.schedulerDao = Objects.requireNonNull(eventSchedulerDao);
@@ -57,10 +51,7 @@ public class Scanner extends AbstractScheduledService {
         scannerMetadata.setId(schedulerId);
         scannerMetadata.setScanTime(currentTime);
       }
-      LOG.debug(
-          "Current time {}, scan time {}",
-          currentTime,
-          scannerMetadata.getScanTime());
+      LOG.debug("Current time {}, scan time {}", currentTime, scannerMetadata.getScanTime());
       if (currentTime >= scannerMetadata.getScanTime()) {
         long endTime = currentTime + SCAN_INTERVAL_SEC;
         LOG.info("Scanning for events upto {} ...", endTime);
@@ -78,12 +69,10 @@ public class Scanner extends AbstractScheduledService {
     return Scheduler.newFixedDelaySchedule(0L, POLLING_INTERVAL_SEC, TimeUnit.SECONDS);
   }
 
-  @PostConstruct
   public void start() {
     super.startAsync();
   }
 
-  @PreDestroy
   public void stop() {
     Service service = super.stopAsync();
     service.awaitTerminated();
