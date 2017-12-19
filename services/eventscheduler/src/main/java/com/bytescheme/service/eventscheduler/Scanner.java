@@ -25,7 +25,7 @@ import com.google.common.util.concurrent.Service;
 public class Scanner extends AbstractScheduledService {
   private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
   // Polling time every 5 secs to check the scan time
-  private static final int POLLING_INTERVAL_SEC = 3;
+  private static final int POLLING_INTERVAL_SEC = 5;
   // Scanning is done every 5 mins unless smaller event is scheduled
   private static final int SCAN_INTERVAL_SEC = 300;
   private final Consumer<Event> consumer;

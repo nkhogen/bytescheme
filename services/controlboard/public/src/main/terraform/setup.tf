@@ -148,7 +148,9 @@ resource "aws_iam_role_policy" "controller-dynamodb-policy" {
             "${aws_dynamodb_table.controller-user-roles-table.arn}",
             "${aws_dynamodb_table.controller-user-objects-table.arn}",
             "${aws_dynamodb_table.controller-object-roles-table.arn}",
-            "${aws_dynamodb_table.controller-endpoints-table.arn}"
+            "${aws_dynamodb_table.controller-endpoints-table.arn}",
+            "${aws_dynamodb_table.scheduler-scanners-table.arn}",
+            "${aws_dynamodb_table.scheduler-events-table.arn}"
          ]
       },
       {
@@ -304,6 +306,36 @@ resource "aws_dynamodb_table" "controller-endpoints-table" {
 
   attribute {
     name = "OBJECT_ID"
+    type = "S"
+  }
+}
+
+resource "aws_dynamodb_table" "scheduler-scanners-table" {
+  name           = "Scanners"
+  read_capacity  = "${var.read_capacity}"
+  write_capacity = "${var.write_capacity}"
+  hash_key       = "ID"
+
+  attribute {
+    name = "ID"
+    type = "S"
+  }
+}
+
+resource "aws_dynamodb_table" "scheduler-events-table" {
+  name           = "Events"
+  read_capacity  = "${var.read_capacity}"
+  write_capacity = "${var.write_capacity}"
+  hash_key       = "ID"
+  range_key      = "SCHEDULER_ID"
+
+  attribute {
+    name = "ID"
+    type = "S"
+  }
+
+  attribute {
+    name = "SCHEDULER_ID"
     type = "S"
   }
 }
