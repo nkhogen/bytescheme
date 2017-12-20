@@ -1,5 +1,7 @@
 package com.bytescheme.service.controlboard.domains;
 
+import java.util.UUID;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -7,9 +9,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 @DynamoDBTable(tableName = "UserObjects")
 public class UserObjects {
   private String user;
-  private String objectId;
+  private UUID objectId;
 
-  @DynamoDBHashKey(attributeName = "USER")
+  @DynamoDBHashKey(attributeName = Constants.USER_FIELD)
   public String getUser() {
     return user;
   }
@@ -18,12 +20,12 @@ public class UserObjects {
     this.user = user;
   }
 
-  @DynamoDBAttribute(attributeName = "OBJECT_ID")
-  public String getObjectId() {
+  @DynamoDBAttribute(attributeName = Constants.OBJECT_ID_FIELD)
+  public UUID getObjectId() {
     return objectId;
   }
 
-  public void setObjectId(String objectId) {
+  public void setObjectId(UUID objectId) {
     this.objectId = objectId;
   }
 }

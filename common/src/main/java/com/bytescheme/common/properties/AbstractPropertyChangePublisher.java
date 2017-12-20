@@ -26,12 +26,12 @@ import com.google.common.util.concurrent.AbstractScheduledService;
  */
 public abstract class AbstractPropertyChangePublisher<V> extends AbstractScheduledService
     implements PropertyChangePublisher<V> {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(AbstractPropertyChangePublisher.class);
-  private final int POLL_INTERVAL_SEC = 10;
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractPropertyChangePublisher.class);
+  private static final int POLL_INTERVAL_SEC = 10;
+
   protected final Set<PropertyChangeListener<V>> listeners = Collections
       .newSetFromMap(new ConcurrentHashMap<>());
-  private final AtomicReference<Map<String, V>> propertiesRef = new AtomicReference<>();
+  protected final AtomicReference<Map<String, V>> propertiesRef = new AtomicReference<>();
 
   public AbstractPropertyChangePublisher() {
 
@@ -43,6 +43,7 @@ public abstract class AbstractPropertyChangePublisher<V> extends AbstractSchedul
       Preconditions.checkNotNull(initialProperties, "Invalid properties received");
       propertiesRef.set(initialProperties);
       super.startAsync();
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> shutDown()));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -58,8 +59,7 @@ public abstract class AbstractPropertyChangePublisher<V> extends AbstractSchedul
       if (properties.equals(latestProperties)) {
         return;
       }
-      MapDifference<Object, Object> difference = Maps.difference(properties,
-          latestProperties);
+      MapDifference<Object, Object> difference = Maps.difference(properties, latestProperties);
       Map<String, V> changedProperties = new HashMap<>();
       // Deleted ones
       for (Object key : difference.entriesOnlyOnLeft().keySet()) {

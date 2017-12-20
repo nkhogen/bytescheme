@@ -2,6 +2,7 @@ package com.bytescheme.service.controlboard;
 
 import java.net.MalformedURLException;
 import java.time.Instant;
+import java.util.List;
 
 import com.bytescheme.common.utils.CryptoUtils;
 import com.bytescheme.rpc.core.HttpClientRequestHandler;
@@ -41,6 +42,8 @@ public class SampleSchedulerTest {
       deviceEventDetails.setTriggerTime(Instant.now().getEpochSecond() + 60);
       deviceEventDetails.setPowerOn(true);
       eventScheduler.schedule(deviceEventDetails);
+      List<DeviceEventDetails> eventDetailsList = eventScheduler.list();
+      System.out.println(eventDetailsList);
     } catch (Exception e) {
       e.printStackTrace();
     } finally {

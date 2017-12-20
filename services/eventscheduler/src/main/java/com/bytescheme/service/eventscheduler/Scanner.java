@@ -28,6 +28,7 @@ public class Scanner extends AbstractScheduledService {
   private static final int POLLING_INTERVAL_SEC = 5;
   // Scanning is done every 5 mins unless smaller event is scheduled
   private static final int SCAN_INTERVAL_SEC = 300;
+
   private final Consumer<Event> consumer;
 
   private final UUID schedulerId;

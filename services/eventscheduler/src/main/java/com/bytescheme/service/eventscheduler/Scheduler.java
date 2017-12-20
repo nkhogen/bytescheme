@@ -1,6 +1,7 @@
 package com.bytescheme.service.eventscheduler;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -36,6 +37,8 @@ public class Scheduler implements Consumer<Event> {
 
   private static final int THREAD_POOL_SIZE = 10;
 
+  private static final int CANCELLED_EVENT_LIFETIME_SEC = 480;
+
   private final ScheduledExecutorService scheduledExecutorService = Executors
       .newScheduledThreadPool(THREAD_POOL_SIZE);
   private final Map<UUID, ScheduledFuture<?>> futures = Maps.newConcurrentMap();
@@ -44,10 +47,7 @@ public class Scheduler implements Consumer<Event> {
   private final Consumer<Event> consumer;
   private final Scanner scanner;
 
-  public Scheduler(
-      UUID schedulerId,
-      SchedulerDao eventSchedulerDao,
-      Consumer<Event> consumer) {
+  public Scheduler(UUID schedulerId, SchedulerDao eventSchedulerDao, Consumer<Event> consumer) {
     this.schedulerId = Objects.requireNonNull(schedulerId);
     this.schedulerDao = Objects.requireNonNull(eventSchedulerDao);
     this.consumer = Objects.requireNonNull(consumer);
@@ -61,17 +61,22 @@ public class Scheduler implements Consumer<Event> {
   @Override
   public void accept(Event event) {
     ScheduledFuture<?> future = futures.get(event.getId());
-    if (future != null) {
-      LOG.info("Event {} is already scheduled", event);
-      if (event.getStatus() == EventStatus.CANCELLED) {
+    if (event.getStatus() == EventStatus.CANCELLED) {
+      if (future != null) {
         LOG.info("Event {} is cancelled", event);
         future.cancel(true);
       }
+      if (Instant.now().getEpochSecond() - event.getModifyTime() >= CANCELLED_EVENT_LIFETIME_SEC) {
+        schedulerDao.delete(event);
+      }
+      return;
+    }
+    if (future != null) {
+      LOG.info("Event {} is already scheduled", event);
       return;
     }
     long currentTime = Instant.now().getEpochSecond();
-    long delay = currentTime >= event.getTriggerTime() ? 0
-        : event.getTriggerTime() - currentTime;
+    long delay = currentTime >= event.getTriggerTime() ? 0 : event.getTriggerTime() - currentTime;
     scheduleEvent(event.getId(), delay, false);
   }
 
@@ -109,11 +114,17 @@ public class Scheduler implements Consumer<Event> {
     return true;
   }
 
-  public boolean cancel(UUID eventId) {
-    Event event = schedulerDao.load(Event.class, eventId, schedulerId, false);
+  // Cancel events from any scheduler
+  public boolean cancel(UUID schedulerId, UUID eventId) {
+    Event event = schedulerDao.load(
+        Event.class,
+        Objects.requireNonNull(eventId),
+        Objects.requireNonNull(schedulerId),
+        false);
     if (event == null) {
       return false;
     }
+    event.setModifyTime(Instant.now().getEpochSecond());
     event.setStatus(EventStatus.CANCELLED);
     if (!schedulerDao.save(event)) {
       return false;
@@ -123,6 +134,11 @@ public class Scheduler implements Consumer<Event> {
       future.cancel(true);
     }
     return true;
+  }
+
+  // Lists events from all schedulers
+  public List<Event> list(String owner) {
+    return schedulerDao.listEvents(Objects.requireNonNull(owner));
   }
 
   @PostConstruct

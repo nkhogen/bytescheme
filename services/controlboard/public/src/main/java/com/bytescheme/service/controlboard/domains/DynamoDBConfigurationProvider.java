@@ -2,12 +2,13 @@ package com.bytescheme.service.controlboard.domains;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -30,10 +31,16 @@ import com.google.common.collect.Sets;
  */
 public class DynamoDBConfigurationProvider implements ConfigurationProvider {
   private static final Logger LOG = LoggerFactory.getLogger(DynamoDBConfigurationProvider.class);
-  private final DynamoDBMapper dbMapper;
 
-  public DynamoDBConfigurationProvider(DynamoDBMapper dbMapper) {
-    this.dbMapper = Objects.requireNonNull(dbMapper, "Invalid Dynamo DB mapper");
+  @Autowired
+  private DynamoDBMapper dbMapper;
+
+  public DynamoDBMapper getDbMapper() {
+    return dbMapper;
+  }
+
+  public void setDbMapper(DynamoDBMapper dbMapper) {
+    this.dbMapper = dbMapper;
   }
 
   @Override
@@ -60,7 +67,7 @@ public class DynamoDBConfigurationProvider implements ConfigurationProvider {
   }
 
   @Override
-  public Function<String, Node<String>> getNodeProvider() {
+  public Function<UUID, Node<String>> getNodeProvider() {
     return objectId -> {
       LOG.info("Retrieving object roles for object ID: {}", objectId);
       ObjectRoles hashKey = new ObjectRoles();

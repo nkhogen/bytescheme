@@ -9,9 +9,10 @@ import java.net.MalformedURLException;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +26,12 @@ import com.bytescheme.rpc.core.RemoteObject;
 import com.bytescheme.rpc.core.RemoteObjectClient;
 import com.bytescheme.rpc.core.RemoteObjectClientBuilder;
 import com.bytescheme.rpc.security.SecurityProvider;
+import com.bytescheme.service.controlboard.ConfigurationProvider;
 import com.bytescheme.service.controlboard.common.models.DeviceEventScheduler;
 import com.bytescheme.service.controlboard.common.remoteobjects.BaseMockControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.ControlBoard;
 import com.bytescheme.service.controlboard.common.remoteobjects.Root;
 import com.bytescheme.service.controlboard.domains.ObjectEndpoint;
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 
 /**
  * Root object implementation.
@@ -45,7 +44,13 @@ public class RootImpl implements Root {
   private static final Logger LOG = LoggerFactory.getLogger(RootImpl.class);
   private static final int CLIENT_RETRY_LIMIT = 3;
   private static final String TARGET_USER = "controlboard";
-  private final Function<String, Set<ObjectEndpoint>> objectEndpointProvider;
+
+  private final ConcurrentHashMap<String, RemoteObjectClient> clients = new ConcurrentHashMap<>(
+      Collections.emptyMap());
+  private final boolean enableMock;
+
+  @Autowired
+  private ConfigurationProvider configurationProvider;
 
   @Autowired
   private SecurityProvider securityProvider;
@@ -53,21 +58,17 @@ public class RootImpl implements Root {
   @Autowired
   private DeviceEventScheduler deviceEventScheduler;
 
-  private final ConcurrentHashMap<String, RemoteObjectClient> clients = new ConcurrentHashMap<>(
-      Collections.emptyMap());
-  private boolean enableMock = false;
-
-  public RootImpl(Function<String, Set<ObjectEndpoint>> objectEndpointProvider) {
-    this.objectEndpointProvider = Preconditions
-        .checkNotNull(objectEndpointProvider, "Invalid object endpoint provider");
+  public RootImpl(boolean enableMock) {
+    this.enableMock = enableMock;
   }
 
   public boolean isEnableMock() {
     return enableMock;
   }
 
-  public void setEnableMock(boolean enableMock) {
-    this.enableMock = enableMock;
+  @PostConstruct
+  public void validate() {
+    Objects.requireNonNull(configurationProvider.getObjectEndpointsProvider());
   }
 
   @Override
@@ -78,8 +79,8 @@ public class RootImpl implements Root {
   @Override
   public ControlBoard getControlBoard() {
     String user = securityProvider.getCurrentUser();
-    ObjectEndpoint objectEndpoint = getObjectEndPoint(user);
-    UUID objectId = UUID.fromString(objectEndpoint.getObjectId());
+    ObjectEndpoint objectEndpoint = configurationProvider.getObjectEndPoint(user);
+    UUID objectId = objectEndpoint.getObjectId();
     try {
       if (enableMock) {
         return new BaseMockControlBoard(objectId);
@@ -118,9 +119,8 @@ public class RootImpl implements Root {
    * This method takes care of auto-login in case of session expiry under the
    * hood when a method of the remote object is invoked.
    */
-  private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId,
-      Method method, Object[] args, String endpoint, PublicKey publicKey)
-      throws MalformedURLException {
+  private <T extends RemoteObject> Object invokeMethod(Class<T> clazz, UUID objectId, Method method,
+      Object[] args, String endpoint, PublicKey publicKey) throws MalformedURLException {
     int retry = 0;
     int parameterCount = (args == null) ? 0 : 1;
     do {
@@ -134,8 +134,7 @@ public class RootImpl implements Root {
           if (client == null) {
             RemoteObjectClientBuilder clientBuilder = new RemoteObjectClientBuilder(
                 new HttpClientRequestHandler(endpoint));
-            client = clientBuilder
-                .login(TARGET_USER, CryptoUtils.encrypt(TARGET_USER, publicKey));
+            client = clientBuilder.login(TARGET_USER, CryptoUtils.encrypt(TARGET_USER, publicKey));
             clients.put(endpoint, client);
           }
         }
@@ -199,16 +198,5 @@ public class RootImpl implements Root {
     throw new RemoteMethodCallException(
         Constants.SERVER_ERROR_CODE,
         "Retry limit exceeded in client call");
-  }
-
-  private ObjectEndpoint getObjectEndPoint(String user) {
-    Set<ObjectEndpoint> objectEndpoints = objectEndpointProvider
-        .apply(Objects.requireNonNull(user));
-    // Support for only one
-    ObjectEndpoint objectEndpoint = Objects
-        .requireNonNull(Iterables.getFirst(objectEndpoints, null));
-    Objects.requireNonNull(objectEndpoint.getObjectId());
-    Objects.requireNonNull(objectEndpoint.getEndpoint());
-    return objectEndpoint;
   }
 }

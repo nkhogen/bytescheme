@@ -1,6 +1,7 @@
 package com.bytescheme.service.eventscheduler.domains;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -35,7 +36,7 @@ public class SchedulerDao {
   }
 
   public boolean save(Object model) {
-    Objects.nonNull(model);
+    Objects.requireNonNull(model);
     boolean[] holder = new boolean[] { false };
     doWithRetry(t -> {
       try {
@@ -50,21 +51,26 @@ public class SchedulerDao {
 
   public <T> T load(Class<T> modelClass, Object hashKey, Object rangeKey,
       boolean isConsistentRead) {
-    Objects.nonNull(modelClass);
-    Objects.nonNull(hashKey);
-    Objects.nonNull(rangeKey);
+    Objects.requireNonNull(modelClass);
+    Objects.requireNonNull(hashKey);
+    Objects.requireNonNull(rangeKey);
     Object[] holder = new Object[1];
     DynamoDBMapperConfig dbMapperConfig = isConsistentRead
         ? DynamoDBMapperConfig.builder().withConsistentReads(ConsistentReads.CONSISTENT).build()
         : DynamoDBMapperConfig.DEFAULT;
     doWithRetry(t -> {
-      holder[0] = dbMapper
-          .load(modelClass, hashKey, rangeKey, dbMapperConfig);
+      holder[0] = dbMapper.load(modelClass, hashKey, rangeKey, dbMapperConfig);
     });
     return modelClass.cast(holder[0]);
   }
 
+  public void delete(Object object) {
+    doWithRetry(t -> dbMapper.delete(object));
+  }
+
   public void scanEvents(UUID schedulerId, long endTime, Consumer<Event> consumer) {
+    Objects.requireNonNull(schedulerId);
+    Objects.requireNonNull(consumer);
     DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
         .withFilterConditionEntry(
             Constants.TRIGGER_TIME_FIELD,
@@ -75,7 +81,7 @@ public class SchedulerDao {
             new Condition().withComparisonOperator(ComparisonOperator.NE)
                 .withAttributeValueList(new AttributeValue().withS(Event.EventStatus.ENDED.name())))
         .withFilterConditionEntry(
-            Constants.SCHEDULER_ID,
+            Constants.SCHEDULER_ID_FIELD,
             new Condition().withComparisonOperator(ComparisonOperator.EQ)
                 .withAttributeValueList(new AttributeValue().withS(schedulerId.toString())));
     PaginatedScanList<Event> pageList = dbMapper.scan(Event.class, scanExpression);
@@ -86,6 +92,21 @@ public class SchedulerDao {
         LOG.error(String.format("Error publishing event %s ", event), e);
       }
     });
+  }
+
+  public List<Event> listEvents(String owner) {
+    Objects.requireNonNull(owner);
+    // TODO move to query later
+    DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
+        .withFilterConditionEntry(
+            Constants.OWNER_FIELD,
+            new Condition().withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(owner)))
+        .withFilterConditionEntry(
+            Constants.STATUS_FIELD,
+            new Condition().withComparisonOperator(ComparisonOperator.EQ).withAttributeValueList(
+                new AttributeValue().withS(Event.EventStatus.SCHEDULED.name())));
+    return dbMapper.scanPage(Event.class, scanExpression).getResults();
   }
 
   private void doWithRetry(Consumer<Long> consumer) {

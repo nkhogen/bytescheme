@@ -3,6 +3,7 @@ package com.bytescheme.service.controlboard;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.security.GeneralSecurityException;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -42,12 +43,9 @@ public class ServiceConfiguration {
     return new DynamoDBMapper(AmazonDynamoDBClientBuilder.defaultClient());
   }
 
-  @Autowired
   @Bean
-  public ConfigurationProvider configurationProvider(DynamoDBMapper dynamodbMapper) {
-    return serviceProperties.isEnableFileConfig()
-        ? new DefaultConfigurationProvider(serviceProperties)
-        : new DynamoDBConfigurationProvider(dynamodbMapper);
+  public ConfigurationProvider configurationProvider() {
+    return new DynamoDBConfigurationProvider();
   }
 
   @Autowired
@@ -72,7 +70,8 @@ public class ServiceConfiguration {
       GoogleAuthenticationProvider googleAuthenticationProvider,
       AWSAuthenticationProvider awsAuthenticationProvider) {
     return new SecurityProvider(
-        new PathProcessor(configurationProvider.getNodeProvider()),
+        new PathProcessor(
+            key -> configurationProvider.getNodeProvider().apply(UUID.fromString(key))),
         googleAuthenticationProvider,
         awsAuthenticationProvider);
   }
@@ -81,8 +80,7 @@ public class ServiceConfiguration {
   @Bean
   public Root root(ConfigurationProvider configurationProvider,
       RemoteObjectServer remoteObjectServer) {
-    RootImpl root = new RootImpl(configurationProvider.getObjectEndpointsProvider());
-    root.setEnableMock(serviceProperties.isEnableMock());
+    RootImpl root = new RootImpl(serviceProperties.isEnableMock());
     remoteObjectServer.register(root);
     return root;
   }

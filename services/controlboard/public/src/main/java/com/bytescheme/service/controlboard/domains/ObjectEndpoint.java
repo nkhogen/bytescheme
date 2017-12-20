@@ -1,6 +1,7 @@
 package com.bytescheme.service.controlboard.domains;
 
 import java.security.PublicKey;
+import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 
@@ -11,17 +12,17 @@ import com.google.common.base.Preconditions;
  *
  */
 public class ObjectEndpoint {
-  private final String objectId;
+  private final UUID objectId;
   private final String endpoint;
   private final PublicKey publicKey;
 
-  public ObjectEndpoint(String objectId, String endpoint, PublicKey publicKey) {
+  public ObjectEndpoint(UUID objectId, String endpoint, PublicKey publicKey) {
     this.objectId = Preconditions.checkNotNull(objectId, "Invalid object ID");
     this.endpoint = Preconditions.checkNotNull(endpoint, "Invalid endpoint");
     this.publicKey = Preconditions.checkNotNull(publicKey, "Invalid public key");
   }
 
-  public String getObjectId() {
+  public UUID getObjectId() {
     return objectId;
   }
 

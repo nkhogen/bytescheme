@@ -6,7 +6,8 @@ package com.bytescheme.service.eventscheduler.domains;
  */
 public final class Constants {
   public static final String ID_FIELD = "ID";
-  public static final String SCHEDULER_ID = "SCHEDULER_ID";
+  public static final String SCHEDULER_ID_FIELD = "SCHEDULER_ID";
+  public static final String OWNER_FIELD = "OWNER";
   public static final String TRIGGER_TIME_FIELD = "TRIGGER_TIME";
   public static final String CREATE_TIME_FIELD = "CREATE_TIME";
   public static final String MODIFY_TIME_FIELD = "MODIFY_TIME";

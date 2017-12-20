@@ -10,7 +10,7 @@ public class UserRoles {
   private String password;
   private String roles;
 
-  @DynamoDBHashKey(attributeName = "USER")
+  @DynamoDBHashKey(attributeName = Constants.USER_FIELD)
   public String getUser() {
     return user;
   }
@@ -19,7 +19,7 @@ public class UserRoles {
     this.user = user;
   }
 
-  @DynamoDBAttribute(attributeName = "PASSWORD")
+  @DynamoDBAttribute(attributeName = Constants.PASSWORD_FIELD)
   public String getPassword() {
     return password;
   }
@@ -28,7 +28,7 @@ public class UserRoles {
     this.password = password;
   }
 
-  @DynamoDBAttribute(attributeName = "ROLES")
+  @DynamoDBAttribute(attributeName = Constants.ROLES_FIELD)
   public String getRoles() {
     return roles;
   }

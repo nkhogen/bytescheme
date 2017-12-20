@@ -19,6 +19,7 @@ import com.bytescheme.common.utils.JsonUtils;
 public class Event {
   private UUID id;
   private UUID schedulerId;
+  private String owner;
   private Long triggerTime;
   private Long createTime;
   private Long modifyTime;
@@ -39,13 +40,23 @@ public class Event {
     this.id = id;
   }
 
-  @DynamoDBRangeKey(attributeName = Constants.SCHEDULER_ID)
+  @DynamoDBRangeKey(attributeName = Constants.SCHEDULER_ID_FIELD)
   public UUID getSchedulerId() {
     return schedulerId;
   }
 
   public void setSchedulerId(UUID schedulerId) {
     this.schedulerId = schedulerId;
+  }
+
+  // TODO index on this
+  @DynamoDBAttribute(attributeName = Constants.OWNER_FIELD)
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(String owner) {
+    this.owner = owner;
   }
 
   // TODO index on this
