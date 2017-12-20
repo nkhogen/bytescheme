@@ -53,7 +53,6 @@ public class SchedulerDao {
       boolean isConsistentRead) {
     Objects.requireNonNull(modelClass);
     Objects.requireNonNull(hashKey);
-    Objects.requireNonNull(rangeKey);
     Object[] holder = new Object[1];
     DynamoDBMapperConfig dbMapperConfig = isConsistentRead
         ? DynamoDBMapperConfig.builder().withConsistentReads(ConsistentReads.CONSISTENT).build()

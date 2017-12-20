@@ -44,6 +44,9 @@ public class SampleSchedulerTest {
       eventScheduler.schedule(deviceEventDetails);
       List<DeviceEventDetails> eventDetailsList = eventScheduler.list();
       System.out.println(eventDetailsList);
+      eventScheduler.cancel(eventDetailsList.get(0));
+      eventDetailsList = eventScheduler.list();
+      System.out.println(eventDetailsList);
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
