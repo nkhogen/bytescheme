@@ -1,5 +1,8 @@
 package com.bytescheme.service.eventscheduler;
 
+import static com.bytescheme.service.eventscheduler.Scanner.POLLING_INTERVAL_SEC;
+import static com.bytescheme.service.eventscheduler.Scanner.SCAN_INTERVAL_SEC;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,7 @@ import com.bytescheme.service.eventscheduler.domains.Event;
 import com.bytescheme.service.eventscheduler.domains.Event.EventStatus;
 import com.bytescheme.service.eventscheduler.domains.SchedulerDao;
 import com.bytescheme.service.eventscheduler.domains.ScannerMetadata;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
 /**
@@ -34,10 +38,8 @@ public class Scheduler implements Consumer<Event> {
 
   // Maximum time taken to process an event once triggered
   private static final int MAX_EVENT_PROCESS_TIME_SEC = 10;
-
   private static final int THREAD_POOL_SIZE = 10;
-
-  private static final int CANCELLED_EVENT_LIFETIME_SEC = 480;
+  private static final int CANCELLED_EVENT_LIFETIME_SEC = 2 * SCAN_INTERVAL_SEC;
 
   private final ScheduledExecutorService scheduledExecutorService = Executors
       .newScheduledThreadPool(THREAD_POOL_SIZE);
@@ -47,7 +49,10 @@ public class Scheduler implements Consumer<Event> {
   private final Consumer<Event> consumer;
   private final Scanner scanner;
 
-  public Scheduler(UUID schedulerId, SchedulerDao eventSchedulerDao, Consumer<Event> consumer) {
+  public Scheduler(
+      UUID schedulerId,
+      SchedulerDao eventSchedulerDao,
+      Consumer<Event> consumer) {
     this.schedulerId = Objects.requireNonNull(schedulerId);
     this.schedulerDao = Objects.requireNonNull(eventSchedulerDao);
     this.consumer = Objects.requireNonNull(consumer);
@@ -66,7 +71,8 @@ public class Scheduler implements Consumer<Event> {
         LOG.info("Event {} is cancelled", event);
         future.cancel(true);
       }
-      if (Instant.now().getEpochSecond() - event.getModifyTime() >= CANCELLED_EVENT_LIFETIME_SEC) {
+      if (Instant.now().getEpochSecond()
+          - event.getModifyTime() >= CANCELLED_EVENT_LIFETIME_SEC) {
         schedulerDao.delete(event);
       }
       return;
@@ -76,13 +82,17 @@ public class Scheduler implements Consumer<Event> {
       return;
     }
     long currentTime = Instant.now().getEpochSecond();
-    long delay = currentTime >= event.getTriggerTime() ? 0 : event.getTriggerTime() - currentTime;
+    long delay = currentTime >= event.getTriggerTime() ? 0
+        : event.getTriggerTime() - currentTime;
     scheduleEvent(event.getId(), delay, false);
   }
 
   public boolean schedule(Event event) {
     Objects.requireNonNull(event);
     long currentTime = Instant.now().getEpochSecond();
+    Preconditions.checkArgument(
+        event.getTriggerTime() > currentTime + POLLING_INTERVAL_SEC,
+        "Invalid event trigger time");
     event.setSchedulerId(schedulerId);
     event.setId(UUID.randomUUID());
     event.setCreateTime(currentTime);
@@ -192,9 +202,7 @@ public class Scheduler implements Consumer<Event> {
       } catch (Exception e) {
         LOG.error(String.format("Exception in sending the event %s", event), e);
       }
-      event.setModifyTime(Instant.now().getEpochSecond());
-      event.setStatus(EventStatus.ENDED);
-      schedulerDao.save(event);
+      schedulerDao.delete(event);
     } else {
       scheduleEvent(event.getId(), MAX_EVENT_PROCESS_TIME_SEC, true);
       LOG.info("Another process has already taken this event {}", event);

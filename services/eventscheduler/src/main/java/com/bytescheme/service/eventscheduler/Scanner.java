@@ -23,18 +23,21 @@ import com.google.common.util.concurrent.Service;
  *
  */
 public class Scanner extends AbstractScheduledService {
-  private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
   // Polling time every 5 secs to check the scan time
-  private static final int POLLING_INTERVAL_SEC = 5;
+  public static final int POLLING_INTERVAL_SEC = 5;
   // Scanning is done every 5 mins unless smaller event is scheduled
-  private static final int SCAN_INTERVAL_SEC = 300;
+  public static final int SCAN_INTERVAL_SEC = 300;
+
+  private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
 
   private final Consumer<Event> consumer;
-
   private final UUID schedulerId;
   private final SchedulerDao schedulerDao;
 
-  public Scanner(UUID schedulerId, SchedulerDao eventSchedulerDao, Consumer<Event> consumer) {
+  public Scanner(
+      UUID schedulerId,
+      SchedulerDao eventSchedulerDao,
+      Consumer<Event> consumer) {
     this.consumer = Objects.requireNonNull(consumer);
     this.schedulerId = Objects.requireNonNull(schedulerId);
     this.schedulerDao = Objects.requireNonNull(eventSchedulerDao);
@@ -52,7 +55,10 @@ public class Scanner extends AbstractScheduledService {
         scannerMetadata.setId(schedulerId);
         scannerMetadata.setScanTime(currentTime);
       }
-      LOG.debug("Current time {}, scan time {}", currentTime, scannerMetadata.getScanTime());
+      LOG.debug(
+          "Current time {}, scan time {}",
+          currentTime,
+          scannerMetadata.getScanTime());
       if (currentTime >= scannerMetadata.getScanTime()) {
         long endTime = currentTime + SCAN_INTERVAL_SEC;
         LOG.info("Scanning for events upto {} ...", endTime);
