@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 import com.bytescheme.common.utils.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
-import com.google.api.client.repackaged.com.google.common.base.Strings;
 
 /**
  * Details of a device event.
@@ -22,8 +21,7 @@ public class DeviceEventDetails implements Serializable {
 
   private @Nullable UUID id;
   private @Nullable UUID schedulerId;
-
-  private String user;
+  private @Nullable String user;
   private int deviceId;
   private long triggerTime;
   private boolean powerOn;
@@ -87,6 +85,5 @@ public class DeviceEventDetails implements Serializable {
     Preconditions.checkArgument(
         triggerTime > Instant.now().getEpochSecond(),
         "Trigger time is invalid");
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(user), "Invalid user");
   }
 }

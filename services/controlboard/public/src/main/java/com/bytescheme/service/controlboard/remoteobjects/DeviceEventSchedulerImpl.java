@@ -90,7 +90,7 @@ public class DeviceEventSchedulerImpl implements DeviceEventScheduler {
     }).collect(Collectors.toList());
   }
 
-  public Event createEvent(DeviceEventDetails eventDetails) {
+  private Event createEvent(DeviceEventDetails eventDetails) {
     Objects.requireNonNull(eventDetails, "Invalid event details").validate();
     if (!Strings.isNullOrEmpty(eventDetails.getUser())
         && !securityProvider.getCurrentUser().equals(eventDetails.getUser())) {

@@ -33,6 +33,7 @@ app.controller('auth_ctrl', function($scope, $http) {
 		});
 	};
 });
+
 app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 	var globals = getGlobals();
 	$scope.init = function() {
@@ -44,6 +45,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 		}
 		$scope.user = getCookie("user");
 		$scope.email = getCookie("email");
+
 		var payload = createHttpPayload($scope.session, globals.root_object_id,
 				"getControlBoard", null);
 		var request = createPostRequest(globals.rpc_url, payload);
@@ -51,14 +53,25 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 		$http(request).then(function(response) {
 			console.log('getControlBoard: '+JSON.stringify(response.data.exception));
 			console.log('getControlBoard: '+response.data.returnValue);
-			if (response.data.returnValue) {
-				$scope.control_object_id = JSON.parse(response.data.returnValue)["::objId"];
-				if ($scope.control_object_id) {
-					$scope.periodicFunction();
-					$scope.intervalFunction();
+			if (response.data.returnValue == null) {
+				return;
+			}
+			$scope.control_object_id = JSON.parse(response.data.returnValue)["::objId"];
+			payload = createHttpPayload($scope.session, globals.root_object_id,
+					"getDeviceEventScheduler", null);
+			request = createPostRequest(globals.rpc_url, payload);
+			console.log('Calling getDeviceEventScheduler');
+			$http(request).then(function(response) {
+				console.log('getDeviceEventScheduler: '+JSON.stringify(response.data.exception));
+				console.log('getDeviceEventScheduler: '+response.data.returnValue);
+				if (response.data.returnValue == null) {
 					return;
 				}
-			}
+				$scope.scheduler_object_id = JSON.parse(response.data.returnValue)["::objId"];
+				$scope.periodicFunction();
+				$scope.intervalFunction();
+				$scope.initDisplay();
+			});
 		});
 	};
 
@@ -79,23 +92,60 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 	};
 
 	$scope.periodicFunction = function() {
+		$scope.listDevices(function() {
+			console.log("Done fetching devices");
+			$scope.listEvents(function(){
+				console.log("Done fetching events");
+			});
+		});
+	};
+
+	$scope.listDevices = function(callback) {
 		var payload = createHttpPayload($scope.session,
 				$scope.control_object_id, "listDevices", null);
 		var request = createPostRequest(globals.rpc_url, payload)
 		$http(request).then(function(response) {
 			console.log('listDevices: '+response.data.returnValue);
-			if (response.data.returnValue) {
-				var devices = JSON.parse(response.data.returnValue);
-				$scope.devices = [];
-				$scope.videos = [];
-				for (var device in devices) {
-					$scope.devices.push($scope.displayDevice(devices[device]["::value"]));
-				}
-				$scope.videos.push("Start Video");
+			if (response.data.returnValue == null) {
+				return;
 			}
-			return response.data.exception;
+			var values = JSON.parse(response.data.returnValue);
+			$scope.devices = {};
+			$scope.videos = {v1 : "Start Video"};
+			for (var key in values) {
+				var device = values[key]["::value"];
+				$scope.devices[device.deviceId] = $scope.displayDevice(device);
+			}
+			callback();
 		});
 	};
+
+	$scope.listEvents = function(callback) {
+		var payload = createHttpPayload($scope.session,
+				$scope.scheduler_object_id, "list", null);
+		var request = createPostRequest(globals.rpc_url, payload)
+		$http(request).then(function(response) {
+			console.log('list: '+response.data.returnValue);
+			if (response.data.returnValue == null) {
+				return;
+			}
+			var values = JSON.parse(response.data.returnValue);
+			$scope.events = {};
+			for (var key in values) {
+				var event = values[key]["::value"];
+				var extendedEvent = $scope.extendEvent(event);
+				if (extendedEvent) {
+					$scope.events[event.deviceId] = extendedEvent;
+				}
+			}
+			callback();
+		});
+	};
+
+	$scope.isAnyDeviceAvailable = function(){
+		return Object.keys($scope.devices).length > 0;
+	};
+
 	// Function to replicate setInterval using $timeout service
 	// (5s).
 	$scope.intervalFunction = function() {
@@ -106,6 +156,19 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 			}
 		}, globals.func_interval)
 	};
+
+	$scope.initDisplay = function() {
+		$scope.hours = [];
+	    for (h = 0; h < 24; h++) {
+	       $scope.hours.push(h);
+	    }
+	    $scope.mins = [];
+	    for (m = 0; m < 60; m++) {
+	       $scope.mins.push(m);
+	    }
+	    $scope.statuss = ["ON", "OFF"];
+	};
+
 	$scope.displayDevice = function(device) {
 		var extendedDevice = null;
 		if (device.powerOn) {
@@ -116,7 +179,23 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 		return extendedDevice;
 	};
 
-	$scope.startVideo = function() {
+	$scope.extendEvent = function(event) {
+		var extendedEvent = null;
+		var dId = event.deviceId.toString();
+		if (dId in $scope.devices) {
+			var device = $scope.devices[dId];
+			var date = new Date(0);
+			date.setUTCSeconds(event.triggerTime);
+			var powerStatus = "OFF";
+			if (event.powerOn) {
+				powerStatus = "ON";
+			}
+			extendedEvent = {id: event.id, schedulerId: event.schedulerId, deviceId : event.deviceId, tag: device.tag, triggerTime : date.toTimeString(), powerOn : powerStatus};
+		}
+		return extendedEvent;
+	};
+
+	$scope.startVideo = function(videoId) {
 		var payload = createHttpPayload($scope.session, $scope.control_object_id, "getVideoUrl", null);
 		var request = createPostRequest(globals.rpc_url, payload);
 		$http(request).then(function(response) {
@@ -130,12 +209,13 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 			}
 			setCookie("video", videoUrl);
 			$window.location.href='video.html';
-			//$window.open('video.html', '_blank', 'fullscreen=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no');
+			// $window.open('video.html', '_blank',
+			// 'fullscreen=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no');
 		});
 	};
 
-	/* Click handler starts */
-	$scope.clickHandler = function(device) {
+	/* Power click handler starts */
+	$scope.powerHandler = function(device) {
 		var next_device = {
 			deviceId : device.deviceId,
 			tag : device.tag,
@@ -153,16 +233,49 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 				return;
 			}
 			var device = JSON.parse(response.data.returnValue);
-			var extendedDevice = $scope.displayDevice(device);
-			for(var d in $scope.devices) {
-				if($scope.devices[d].deviceId == extendedDevice.deviceId) {
-					$scope.devices[d].powerOn = extendedDevice.powerOn;
-					$scope.devices[d].button_css_class = extendedDevice.button_css_class;
-					return;
+			$scope.devices[device.deviceId] = $scope.displayDevice(device);
+		});
+	};
+
+	$scope.scheduleEventHandler = function(event) {
+		var eventDetails = {
+				deviceId : event.device.deviceId,
+				triggerTime: getTriggerTimeSec(event.hour, event.min),
+				powerOn: (event.status == 'ON')
+		};
+		var payload = createHttpPayload($scope.session,
+				$scope.scheduler_object_id, "schedule", [JSON.stringify(eventDetails)]);
+		var request = createPostRequest(globals.rpc_url, payload);
+		$http(request).then(function(response) {
+			console.log("Response for schedule: " + response.data.returnValue);
+			if (response.data.returnValue == null) {
+				if (checkException(response.data.exception)) {
+					redirectOnLogout();
 				}
+				return;
 			}
-			console.log('New device added');
-			$scope.devices.push(extendedDevice);
+			$scope.periodicFunction();
+		});
+	};
+
+	$scope.cancelEventHandler = function(event) {
+		var eventDetails = {
+				id : event.id,
+				schedulerId : event.schedulerId,
+				user : $scope.email
+		};
+		var payload = createHttpPayload($scope.session,
+				$scope.scheduler_object_id, "cancel", [JSON.stringify(eventDetails)]);
+		var request = createPostRequest(globals.rpc_url, payload);
+		$http(request).then(function(response) {
+			console.log("Response for delete: " + response.data.returnValue);
+			if (response.data.returnValue == null) {
+				if (checkException(response.data.exception)) {
+					redirectOnLogout();
+				}
+				return;
+			}
+			$scope.periodicFunction();
 		});
 	};
 });

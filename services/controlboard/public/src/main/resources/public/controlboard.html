@@ -67,19 +67,20 @@ h1 {
 }
 
 a:link, a:visited {
-    color: blue;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size:30px;
-    margin-left: 20px;
+	color: blue;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 30px;
+	margin-left: 20px;
 }
 
 a:hover, a:active {
-    color: red;
-    font-size:30px;
-    margin-left: 20px;
+	color: red;
+	font-size: 30px;
+	margin-left: 20px;
 }
+
 .device {
 	font-family: Arial;
 	color: blue;
@@ -87,31 +88,116 @@ a:hover, a:active {
 	font-size: 65px;
 	margin-left: 30px;
 }
+
+.label {
+	font-family: Arial;
+	color: blue;
+	font-weight: normal;
+	font-size: 30px;
+	margin-left: 30px;
+}
+
+.select {
+	background: transparent;
+	font-size: 14px;
+	height: 30px;
+	width: 90px;
+	margin-left: 30px;
+}
+
+.event-button {
+	margin-left: 30px;
+	border-radius: 12px;
+	padding: 5px 10px;
+	font-size: 14px;
+	text-align: center;
+	cursor: pointer;
+	outline: none;
+	color: #fff;
+	background-color: black;
+	border: none;
+	border-radius: 15px;
+	box-shadow: 0 9px #999;
+}
+
+.event-button:active {
+	background-color: black;
+	box-shadow: 0 5px #666;
+	transform: translateY(4px);
+}
+
+.events {
+	font-family: Arial;
+	color: black;
+	font-weight: normal;
+	font-size: 20px;
+	margin-left: 30px;
+}
+
+.events-row {
+	padding-top:20px;
+}
 </style>
-<script>
-	function onLoad() {
-		gapi.load('auth2', function() {
-			gapi.auth2.init();
-		});
-	}
-</script>
-<a href="https://bytescheme.wordpress.com">Info</a>
-<h1>Hello {{user}}</h1>
-<button class="button_signout" onclick="signOut()"></button>
-<table>
-	<tr ng-repeat="v in videos">
-		<td>
-			<button class="play_video" ng-click="startVideo()"></button>
-		</td>
-		<td><span class="device">{{v}}</span></td>
-	</tr>
-	<tr ng-repeat="d in devices">
-		<td>
-			<button class={{d.button_css_class}} ng-click="clickHandler(d)">
-			</button>
-		</td>
-		<td><span class="device">{{d.tag}}</span></td>
+	<script>
+		function onLoad() {
+			gapi.load('auth2', function() {
+				gapi.auth2.init();
+			});
+		}
+	</script>
+	<a href="https://bytescheme.wordpress.com">Info</a>
+	<h1>Hello {{user}}</h1>
+	<button class="button_signout" onclick="signOut()"></button>
+	<table>
+		<tr ng-repeat="(id, video) in videos">
+			<td>
+				<button class="play_video" ng-click="startVideo(id)"></button>
+			</td>
+			<td><span class="device">{{video}}</span></td>
 		</tr>
-</table>
+		<tr ng-repeat="(id, device) in devices">
+			<td>
+				<button class={{device.button_css_class}}
+					ng-click="powerHandler(device)"></button>
+			</td>
+			<td><span class="device">{{device.tag}}</span></td>
+		</tr>
+	</table>
+	<br>
+	<table>
+		<tr ng-if="isAnyDeviceAvailable()">
+			<td><label class="label" for="device-select">Device</label></td>
+			<td><label class="label" for="hour-select">Hour</label></td>
+			<td><label class="label" for="min-select">Minute</label></td>
+			<td><label class="label" for="status-select">Power</label></td>
+			<td><label class="label" for="action-button">Action</label></td>
+		</tr>
+		<tr ng-if="isAnyDeviceAvailable()">
+			<td><select class="select" name="device-select"
+				ng-init="selectedDevice= 'NONE'" ng-model="selectedDevice"
+				ng-options="v.tag for (k, v) in devices"></select></td>
+			<td><select class="select" name="hour-select"
+				ng-init="selectedHr = hours[0]" ng-model="selectedHr"
+				ng-options="hr for hr in hours"></select></td>
+			<td><select class="select" name="min-select"
+				ng-init="selectedMin = mins[0]" ng-model="selectedMin"
+				ng-options="min for min in mins"></select></td>
+			<td><select class="select" name="status-select"
+				ng-init="selectedStatus = statuss[0]" ng-model="selectedStatus"
+				ng-options="status for status in statuss"></select></td>
+			<td>
+				<button class="event-button" name="action-button"
+					ng-click="scheduleEventHandler({device: selectedDevice, hour: selectedHr, min: selectedMin, status: selectedStatus})">Schedule</button>
+			</td>
+
+		</tr>
+		<tr ng-repeat="(id, event) in events">
+			<td class="events-row"><span class="events">{{event.tag}}</span></td>
+			<td class="events-row" colspan="2"><span class="events">{{event.triggerTime}}</span></td>
+			<td class="events-row"><span class="events">{{event.powerOn}}</span></td>
+			<td class="events-row"><button class="event-button"
+					ng-click="cancelEventHandler(event)">Cancel</button></td>
+		</tr>
+	</table>
 </body>
 </html>

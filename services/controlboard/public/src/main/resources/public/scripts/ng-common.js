@@ -19,6 +19,13 @@ function guid() {
 			+ s4() + s4();
 };
 
+function getTriggerTimeSec(hr, min) {
+	var seconds = Math.round(new Date().getTime() / 1000);
+	seconds += (hr * 60 * 60);
+	seconds += (min * 60);
+	return seconds;
+};
+
 function createPostRequest(target, payload) {
 	var request = {
 		method : 'POST',
