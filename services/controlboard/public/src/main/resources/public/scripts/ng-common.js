@@ -82,7 +82,7 @@ function redirectOnLogin() {
 			+ "&redirect_uri="
 			+ globals.success_redirect
 			+ "&response_type=token";
-	window.location.replace(url);
+	document.location.replace(url);
 };
 
 function redirectOnLogout() {
