@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height"/>
+  <link rel="stylesheet" type="text/css" href="css/index.css"/>
+  <meta name="msapplication-tap-highlight" content="no"/>
+  <title>Controlboard</title>
+</head>
+<body ng-app="app" ng-controller="auth_ctrl" ng-init="init()">
+<div class="app">
+
+  <h1>Controlboard</h1>
+
+  <div id="deviceready" class="blink">
+    <p class="event listening">Connecting to Device</p>
+    <p class="event received">Device is Ready</p>
+    <br/><br/>
+    <button ng-click="login()">Login with Google</button>
+    <br/><br/>
+    <button ng-click="logout()">Logout</button>
+   </div>
+</div>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
+<script type="text/javascript" src="cordova.js"></script>
+<script type="text/javascript" src="js/index.js"></script>
+<script type="text/javascript" src="js/ng-common.js"></script>
+<script type="text/javascript" src="js/ng-main.js"></script>
+</body>
+</html>

@@ -3,67 +3,67 @@
 <head>
 <link rel='shortcut icon' href='images/favicon.ico' type='image/x-icon' />
 <title>Device Controller</title>
-<meta name="google-signin-client_id"
-	content="91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com">
-<script
-	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
-<script src="scripts/ng-common.js"></script>
-<script src="scripts/ng-main.js"></script>
-<script src="https://apis.google.com/js/platform.js?onload=onLoad" async
-	defer></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
+<script type="text/javascript" src="js/ng-common.js"></script>
+<script type="text/javascript" src="js/ng-main.js"></script>
+<script type="text/javascript" src="cordova.js"></script>
+<script type="text/javascript" src="js/index.js"></script>
 </head>
 <body ng-app="app" ng-controller="controlboard_ctrl" ng-init="init()">
 	<style parse-style>
 .power_off {
-	width: 250px;
-	height: 250px;
+	width: 60px;
+	height: 60px;
 	border: none;
-	background-size: 245px 245px;
-	background-image: url('images/red-off.svg');
+	background-size: 55px 55px;
+	background-image: url('img/red-off.svg');
 	background-color: Transparent;
 	background-position: center;
 	background-repeat: no-repeat;
+	margin-left: 5px;
 }
 
 .power_on {
-	width: 250px;
-	height: 250px;
+	width: 60px;
+	height: 60px;
 	border: none;
-	background-size: 245px 245px;
-	background-image: url('images/green-on.png');
+	background-size: 55px 55px;
+	background-image: url('img/green-on.png');
 	background-color: Transparent;
 	background-position: center;
 	background-repeat: no-repeat;
+	margin-left: 5px;
 }
 
 .play_video {
-	width: 220px;
-	height: 220px;
+	width: 55px;
+	height: 55px;
 	border: none;
-	background-size: 210px 210px;
-	background-image: url('images/video-play.png');
+	background-size: 50px 50px;
+	background-image: url('img/video-play.png');
 	background-color: Transparent;
 	background-position: center;
 	background-repeat: no-repeat;
-	margin-left: 20px;
+	margin-left: 10px;
 }
 
 .button_signout {
-	width: 500px;
-	height: 130px;
+	width: 100px;
+	height: 26px;
 	border: none;
-	background-size: 495px 125px;
-	background-image: url('images/signout.jpg');
+	background-size: 99px 25px;
+	background-image: url('img/signout.jpg');
 	background-color: Transparent;
 	background-position: center;
 	background-repeat: no-repeat;
+	margin-left: 5px;
 }
 
 h1 {
-	font-size: 65px;
+	font-size: 17px;
 	font-family: Arial;
 	font-weight: normal;
-	margin-left: 20px;
+	margin-left: 10px;
 }
 
 a:link, a:visited {
@@ -71,45 +71,45 @@ a:link, a:visited {
 	text-align: center;
 	text-decoration: none;
 	display: inline-block;
-	font-size: 30px;
-	margin-left: 20px;
+	font-size: 9px;
+	margin-left: 5px;
 }
 
 a:hover, a:active {
 	color: red;
-	font-size: 30px;
-	margin-left: 20px;
+	font-size: 9px;
+	margin-left: 5px;
 }
 
 .device {
 	font-family: Arial;
 	color: blue;
 	font-weight: normal;
-	font-size: 65px;
-	margin-left: 30px;
+	font-size: 15px;
+	margin-left: 5px;
 }
 
 .label {
 	font-family: Arial;
 	color: blue;
 	font-weight: normal;
-	font-size: 45px;
-	margin-left: 35px;
+	font-size: 15px;
+	margin-left: 12px;
 }
 
 .select {
 	background: transparent;
-	font-size: 30px;
-	height: 35px;
-	width: 90px;
-	margin-left: 35px;
+	font-size: 12px;
+	height: 17px;
+	width: 40px;
+	margin-left: 12px;
 }
 
 .event-button {
-	margin-left: 35px;
+	margin-left: 12 px;
 	border-radius: 12px;
 	padding: 5px 10px;
-	font-size: 30px;
+	font-size: 12px;
 	text-align: center;
 	cursor: pointer;
 	outline: none;
@@ -130,24 +130,17 @@ a:hover, a:active {
 	font-family: Arial;
 	color: black;
 	font-weight: normal;
-	font-size: 30px;
-	margin-left: 35px;
+	font-size: 12px;
+	margin-left: 12px;
 }
 
 .events-row {
-	padding-top:20px;
+	padding-top:10px;
 }
 </style>
-	<script>
-		function onLoad() {
-			gapi.load('auth2', function() {
-				gapi.auth2.init();
-			});
-		}
-	</script>
 	<a href="https://bytescheme.wordpress.com">Info</a>
 	<h1>Hello {{user}}</h1>
-	<button class="button_signout" onclick="signOut()"></button>
+	<button class="button_signout" ng-click="logout()"></button>
 	<table>
 		<tr ng-repeat="(id, video) in videos">
 			<td>

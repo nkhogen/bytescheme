@@ -51,9 +51,10 @@ public class ServiceConfiguration {
   @Autowired
   @Bean
   public GoogleAuthenticationProvider googleAuthenticationProvider(
-      ConfigurationProvider configurationProvider) throws IOException, GeneralSecurityException {
+      ConfigurationProvider configurationProvider)
+      throws IOException, GeneralSecurityException {
     return new GoogleAuthenticationProvider(
-        serviceProperties.getGoogleClientId(),
+        serviceProperties.getGoogleClientIds(),
         configurationProvider.getAuthenticationDataProvider());
   }
 
@@ -61,7 +62,8 @@ public class ServiceConfiguration {
   @Bean
   public AWSAuthenticationProvider awsAuthenticationProvider(
       ConfigurationProvider configurationProvider) {
-    return new AWSAuthenticationProvider(configurationProvider.getAuthenticationDataProvider());
+    return new AWSAuthenticationProvider(
+        configurationProvider.getAuthenticationDataProvider());
   }
 
   @Autowired
@@ -87,7 +89,8 @@ public class ServiceConfiguration {
 
   @Autowired
   @Bean
-  public RemoteObjectServer remoteObjectServer(SecurityProvider securityProvider) throws Exception {
+  public RemoteObjectServer remoteObjectServer(SecurityProvider securityProvider)
+      throws Exception {
     return new RemoteObjectServer(true, securityProvider);
   }
 
@@ -105,8 +108,12 @@ public class ServiceConfiguration {
 
   @Autowired
   @Bean
-  public Scheduler scheduler(SchedulerDao schedulerDao, DeviceEventConsumer deviceEventConsumer) {
-    return new Scheduler(serviceProperties.getSchedulerId(), schedulerDao, deviceEventConsumer);
+  public Scheduler scheduler(SchedulerDao schedulerDao,
+      DeviceEventConsumer deviceEventConsumer) {
+    return new Scheduler(
+        serviceProperties.getSchedulerId(),
+        schedulerDao,
+        deviceEventConsumer);
   }
 
   @Bean

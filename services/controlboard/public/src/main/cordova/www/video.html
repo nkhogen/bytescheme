@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel='shortcut icon' href='img/favicon.ico' type='image/x-icon' />
+<meta name="viewport" content="width=320, initial-scale=1" />
+<title>Device Controller</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
+<script src="js/ng-common.js"></script>
+<style type="text/css">
+body {
+	background: #333;
+	text-align: center;
+	margin-top: 10%;
+}
+
+#videoCanvas {
+	/* Always stretch the canvas to 640x480, regardless of its
+			internal size. */
+	width: 640px;
+	height: 480px;
+}
+</style>
+</head>
+<body>
+	<!-- The Canvas size specified here is the "initial" internal resolution. jsmpeg will
+		change this internal resolution to whatever the source provides. The size the
+		canvas is displayed on the website is dictated by the CSS style.
+	-->
+	<canvas id="videoCanvas" width="640" height="480">
+		<p>
+			Please use a browser that supports the Canvas Element, like
+			<a href="http://www.google.com/chrome">Chrome</a>,
+			<a href="http://www.mozilla.com/firefox/">Firefox</a>,
+			<a href="http://www.apple.com/safari/">Safari</a> or Internet Explorer 10
+		</p>
+	</canvas>
+	<script type="text/javascript" src="js/jsmpg.js"></script>
+	<script type="text/javascript">
+		var url = getCookie("video").replace(/"/g, "");
+		var httpsOrigin = extractOrigin(url);
+		console.log(httpsOrigin);
+		var options = {origin: httpsOrigin, rejectUnauthorized: false};
+		var client = new WebSocket(url, "stream");
+		var canvas = document.getElementById('videoCanvas');
+		var player = new jsmpeg(client, {
+			canvas : canvas
+		});
+	</script>
+</body>
+</html>

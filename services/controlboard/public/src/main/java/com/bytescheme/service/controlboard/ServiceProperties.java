@@ -1,13 +1,14 @@
 package com.bytescheme.service.controlboard;
 
+import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.google.api.client.repackaged.com.google.common.base.Preconditions;
-import com.google.api.client.repackaged.com.google.common.base.Strings;
 
 /**
  * Service configuration properties from application.properties.
@@ -17,21 +18,23 @@ import com.google.api.client.repackaged.com.google.common.base.Strings;
  */
 @ConfigurationProperties(prefix = "controlboard")
 public class ServiceProperties {
-  private String googleClientId;
+  private List<String> googleClientIds;
   private UUID schedulerId;
   private boolean enableMock;
 
   @PostConstruct
   public void init() {
-    Preconditions.checkNotNull(!Strings.isNullOrEmpty(googleClientId), "Invalid Google client ID");
+    Preconditions.checkNotNull(
+        CollectionUtils.isNotEmpty(googleClientIds),
+        "Invalid Google client ID");
   }
 
-  public String getGoogleClientId() {
-    return googleClientId;
+  public List<String> getGoogleClientIds() {
+    return googleClientIds;
   }
 
-  public void setGoogleClientId(String googleClientId) {
-    this.googleClientId = googleClientId;
+  public void setGoogleClientIds(List<String> googleClientIds) {
+    this.googleClientIds = googleClientIds;
   }
 
   public UUID getSchedulerId() {

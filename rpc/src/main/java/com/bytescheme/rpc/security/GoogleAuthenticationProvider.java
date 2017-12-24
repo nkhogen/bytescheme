@@ -2,8 +2,9 @@ package com.bytescheme.rpc.security;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.Arrays;
+import java.util.List;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +15,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Google OAuth based authenticator. The roles come from a file.
@@ -25,18 +26,22 @@ import com.google.common.base.Strings;
 public class GoogleAuthenticationProvider extends BasicAuthenticationProvider {
   private static final Logger LOG = LoggerFactory
       .getLogger(GoogleAuthenticationProvider.class);
-  private static final String ISSUER = "accounts.google.com";
+  private static final List<String> ISSUERS = ImmutableList
+      .of("accounts.google.com", "https://accounts.google.com");
   private final GoogleIdTokenVerifier verifier;
 
-  public GoogleAuthenticationProvider(String clientId, Function<String, AuthData> authDataProvider)
+  public GoogleAuthenticationProvider(
+      List<String> clientIds,
+      Function<String, AuthData> authDataProvider)
       throws IOException, GeneralSecurityException {
     super(authDataProvider);
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(clientId),
-        "Invalid Google client ID");
+    Preconditions
+        .checkArgument(CollectionUtils.isNotEmpty(clientIds), "Invalid Google client ID");
     NetHttpTransport transport = new NetHttpTransport.Builder().doNotValidateCertificate()
         .build();
+
     verifier = new GoogleIdTokenVerifier.Builder(transport, new GsonFactory())
-        .setAudience(Arrays.asList(clientId))
+        .setAudience(clientIds)
         // If you retrieved the token on Android using the Play Services 8.3
         // API or newer, set
         // the issuer to "https://accounts.google.com". Otherwise, set the
@@ -44,7 +49,7 @@ public class GoogleAuthenticationProvider extends BasicAuthenticationProvider {
         // "accounts.google.com". If you need to verify tokens from multiple
         // sources, build
         // a GoogleIdTokenVerifier for each issuer and try them both.
-        .setIssuer(ISSUER).build();
+        .setIssuers(ISSUERS).build();
   }
 
   @Override
@@ -58,6 +63,7 @@ public class GoogleAuthenticationProvider extends BasicAuthenticationProvider {
       LOG.error("Exception in token verfication", e);
     }
     if (idToken == null) {
+      LOG.error("No ID token received from the verifier");
       return null;
     }
     Payload payload = idToken.getPayload();
@@ -66,7 +72,9 @@ public class GoogleAuthenticationProvider extends BasicAuthenticationProvider {
       return null;
     }
     AuthData authData = authDataProvider.apply(email);
-    return new Authentication(email, authentication.getPassword(),
+    return new Authentication(
+        email,
+        authentication.getPassword(),
         authData == null ? null : authData.getRoles());
   }
 }

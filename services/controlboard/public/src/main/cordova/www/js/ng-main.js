@@ -7,17 +7,30 @@ app.controller('auth_ctrl', function($scope, $http) {
 	var globals = getGlobals();
 	$scope.init = function() {
 	};
-	$scope.rpc_login = function(googleUser) {
-		var profile = googleUser.getBasicProfile();
-		var auth = googleUser.getAuthResponse();
-		var user = profile.getName();
-		var email = profile.getEmail();
+
+    // https://github.com/EddyVerbruggen/cordova-plugin-googleplus
+	$scope.login = function() {
+		window.plugins.googleplus.login(
+		{
+			'webClientId': globals.webclient_id,
+		},
+        function (obj) {
+          $scope.rpc_login(obj);
+        },
+        function (msg) {
+			console.log(msg);
+        }
+       );
+	};
+
+	$scope.rpc_login = function(authObj) {
+		var user = authObj.displayName;
+		var email = authObj.email.trim();
 		console.log('Name: ' + user);
 		console.log('Email: ' + email);
-		var id_token = auth["id_token"];
 		var request = createPostRequest(globals.login_url, {
 			user : email,
-			password : id_token,
+			password : authObj.idToken,
 			requestId : guid()
 		});
 		$http(request).then(function(response) {
@@ -27,7 +40,6 @@ app.controller('auth_ctrl', function($scope, $http) {
 				setCookie("session", $scope.session);
 				setCookie("user", user);
 				setCookie("email", email);
-				console.log($scope.session);
 				redirectOnLogin();
 			} else {
 				redirectOnLogout();
@@ -75,6 +87,15 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 				$scope.initDisplay();
 			});
 		});
+	};
+
+    $scope.logout = function() {
+		// https://github.com/EddyVerbruggen/cordova-plugin-googleplus
+		window.plugins.googleplus.logout(
+		function (msg) {
+			$scope.rpc_logout();
+        }
+        );
 	};
 
 	$scope.rpc_logout = function() {
@@ -145,10 +166,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 	};
 
 	$scope.isAnyDeviceAvailable = function(){
-		if ($scope.devices) {
-			return Object.keys($scope.devices).length > 0;
-		}
-		return false;
+		return Object.keys($scope.devices).length > 0;
 	};
 
 	// Function to replicate setInterval using $timeout service
@@ -213,9 +231,7 @@ app.controller('controlboard_ctrl', function($scope, $http, $timeout, $window) {
 				return;
 			}
 			setCookie("video", videoUrl);
-			$window.location.href='video.html';
-			// $window.open('video.html', '_blank',
-			// 'fullscreen=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no');
+			$window.location ='video.html';
 		});
 	};
 

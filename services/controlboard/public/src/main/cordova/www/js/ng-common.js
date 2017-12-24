@@ -54,13 +54,13 @@ function getGlobals() {
 	var domain = "controller.bytescheme.com";
 	var home_url = scheme + domain;
 	var globals = {
-		client_id : "91456297737-d1p2ha4n2847bpsrdrcp72uhp614ar9q.apps.googleusercontent.com",
+		webclient_id: '91456297737-dhbh8oepbecs7gj9hfbgfh4896ri1die.apps.googleusercontent.com',
 		login_page : home_url,
 		login_url : home_url + '/rpc/login',
 		logout_url : home_url + '/rpc/logout',
 		rpc_url : home_url + "/rpc",
-		success_redirect : home_url + "/controlboard.html",
-		logout_redirect : home_url,
+		success_redirect :  "controlboard.html",
+		logout_redirect : "index.html",
 		poweron_css_class : 'power_on',
 		poweroff_css_class : 'power_off',
 		func_interval : 20000,
@@ -77,41 +77,14 @@ function extractOrigin(url) {
 
 function redirectOnLogin() {
 	var globals = getGlobals();
-	var url = "https://accounts.google.com/o/oauth2/v2/auth?scope=email&client_id="
-			+ globals.client_id
-			+ "&redirect_uri="
-			+ globals.success_redirect
-			+ "&response_type=token";
-	document.location.replace(url);
+	document.location.replace(globals.success_redirect);
 };
 
 function redirectOnLogout() {
 	var globals = getGlobals();
-	document.location
-			.replace("https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue="
-					+ globals.logout_redirect);
+	document.location.replace(globals.logout_redirect);
 };
 
-function doInScope(appName, callback) {
-	var appElement = document.querySelector('[ng-app=' + appName + ']');
-	var $scope = angular.element(appElement).scope();
-	$scope.$apply(callback($scope));
-};
-
-function onSignIn(googleUser) {
-	doInScope('app', function(scope) {
-		scope.rpc_login(googleUser);
-	});
-};
-
-function signOut() {
-	var auth2 = gapi.auth2.getAuthInstance();
-	auth2.signOut().then(function() {
-		doInScope('app', function(scope) {
-			scope.rpc_logout();
-		});
-	});
-};
 
 function checkException(e) {
 	if (e) {
@@ -129,8 +102,7 @@ function setCookie(cname, cvalue) {
 	var d = new Date();
 	d.setTime(d.getTime() + (mins * 60 * 1000));
 	var expires = "expires=" + d.toUTCString();
-	document.cookie = cname + "=" + cvalue + ";" + expires
-			+ ";domain=bytescheme.com";
+	document.cookie = cname + "=" + cvalue + ";" + expires;
 };
 
 function getCookie(cname) {
