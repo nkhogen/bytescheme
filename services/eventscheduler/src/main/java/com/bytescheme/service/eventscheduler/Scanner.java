@@ -26,13 +26,15 @@ public class Scanner extends AbstractScheduledService {
   // Polling time every 5 secs to check the scan time
   public static final int POLLING_INTERVAL_SEC = 5;
   // Scanning is done every 5 mins unless smaller event is scheduled
-  public static final int SCAN_INTERVAL_SEC = 300;
+  public static final int SCAN_INTERVAL_SEC = 600;
 
   private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
 
   private final Consumer<Event> consumer;
   private final UUID schedulerId;
   private final SchedulerDao schedulerDao;
+
+  private long scanCount = 0L;
 
   public Scanner(
       UUID schedulerId,
@@ -59,10 +61,11 @@ public class Scanner extends AbstractScheduledService {
           "Current time {}, scan time {}",
           currentTime,
           scannerMetadata.getScanTime());
-      if (currentTime >= scannerMetadata.getScanTime()) {
+      if (scanCount == 0L || currentTime >= scannerMetadata.getScanTime()) {
         long endTime = currentTime + SCAN_INTERVAL_SEC;
-        LOG.info("Scanning for events upto {} ...", endTime);
+        LOG.info("Scanning for events upto {} ... for {} time", endTime, scanCount);
         schedulerDao.scanEvents(schedulerId, endTime, consumer);
+        scanCount++;
         scannerMetadata.setScanTime(endTime);
         schedulerDao.save(scannerMetadata);
       }
