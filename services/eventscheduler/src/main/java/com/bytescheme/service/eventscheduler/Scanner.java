@@ -24,7 +24,7 @@ import com.google.common.util.concurrent.Service;
  */
 public class Scanner extends AbstractScheduledService {
   // Polling time every 5 secs to check the scan time
-  public static final int POLLING_INTERVAL_SEC = 5;
+  public static final int POLLING_INTERVAL_SEC = 30;
   // Scanning is done every 5 mins unless smaller event is scheduled
   public static final int SCAN_INTERVAL_SEC = 600;
 
