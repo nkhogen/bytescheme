@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
-<link rel='shortcut icon' href='images/favicon.ico' type='image/x-icon' />
+<link rel='shortcut icon' href='img/favicon.ico' type='image/x-icon' />
 <title>Device Controller</title>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
 <script type="text/javascript" src="js/ng-common.js"></script>
@@ -105,25 +105,28 @@ a:hover, a:active {
 	margin-left: 12px;
 }
 
-.event-button {
-	margin-left: 12 px;
-	border-radius: 12px;
-	padding: 5px 10px;
-	font-size: 12px;
-	text-align: center;
-	cursor: pointer;
-	outline: none;
-	color: #fff;
-	background-color: black;
+.schedule_button {
+	width: 45px;
+	height: 55px;
 	border: none;
-	border-radius: 15px;
-	box-shadow: 0 9px #999;
+	background-size: 40px 50px;
+	background-image: url('img/schedule.jpg');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+	margin-left: 12px;
 }
 
-.event-button:active {
-	background-color: black;
-	box-shadow: 0 5px #666;
-	transform: translateY(4px);
+.event_button {
+	width: 45px;
+	height: 45px;
+	border: none;
+	background-size: 40px 40px;
+	background-image: url('img/cancel.png');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+	margin-left: 12px;
 }
 
 .events {
@@ -136,7 +139,7 @@ a:hover, a:active {
 }
 
 .events-row {
-	padding-top:10px;
+	padding-top: 5px;
 }
 </style>
 	<a href="https://bytescheme.wordpress.com">Info</a>
@@ -180,8 +183,8 @@ a:hover, a:active {
 				ng-init="selectedStatus = statuss[0]" ng-model="selectedStatus"
 				ng-options="status for status in statuss"></select></td>
 			<td>
-				<button class="event-button" name="action-button"
-					ng-click="scheduleEventHandler({device: selectedDevice, hour: selectedHr, min: selectedMin, status: selectedStatus})">Schedule</button>
+				<button class="schedule_button" name="action-button"
+					ng-click="scheduleEventHandler({device: selectedDevice, hour: selectedHr, min: selectedMin, status: selectedStatus})"></button>
 			</td>
 
 		</tr>
@@ -189,8 +192,8 @@ a:hover, a:active {
 			<td class="events-row"><span class="events">{{event.tag}}</span></td>
 			<td class="events-row" colspan="2"><span class="events">{{event.triggerTime}}</span></td>
 			<td class="events-row"><span class="events">{{event.powerOn}}</span></td>
-			<td class="events-row"><button class="event-button"
-					ng-click="cancelEventHandler(event)">Cancel</button></td>
+			<td class="events-row"><button class="event_button"
+					ng-click="cancelEventHandler(event)"></button></td>
 		</tr>
 	</table>
 </body>

@@ -105,25 +105,28 @@ a:hover, a:active {
 	margin-left: 35px;
 }
 
-.event-button {
-	margin-left: 35px;
-	border-radius: 12px;
-	padding: 5px 10px;
-	font-size: 30px;
-	text-align: center;
-	cursor: pointer;
-	outline: none;
-	color: #fff;
-	background-color: black;
+.schedule_button {
+	width: 235px;
+	height: 250px;
 	border: none;
-	border-radius: 15px;
-	box-shadow: 0 9px #999;
+	background-size: 230px 245px;
+	background-image: url('images/schedule.jpg');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+	margin-left: 35px;
 }
 
-.event-button:active {
-	background-color: black;
-	box-shadow: 0 5px #666;
-	transform: translateY(4px);
+.event_button {
+	width: 225px;
+	height: 225px;
+	border: none;
+	background-size: 200px 200px;
+	background-image: url('images/cancel.png');
+	background-color: Transparent;
+	background-position: center;
+	background-repeat: no-repeat;
+	margin-left: 35px;
 }
 
 .events {
@@ -186,8 +189,8 @@ a:hover, a:active {
 				ng-init="selectedStatus = statuss[0]" ng-model="selectedStatus"
 				ng-options="status for status in statuss"></select></td>
 			<td>
-				<button class="event-button" name="action-button"
-					ng-click="scheduleEventHandler({device: selectedDevice, hour: selectedHr, min: selectedMin, status: selectedStatus})">Schedule</button>
+				<button class="schedule_button" name="action-button"
+					ng-click="scheduleEventHandler({device: selectedDevice, hour: selectedHr, min: selectedMin, status: selectedStatus})"></button>
 			</td>
 
 		</tr>
@@ -195,8 +198,8 @@ a:hover, a:active {
 			<td class="events-row"><span class="events">{{event.tag}}</span></td>
 			<td class="events-row" colspan="2"><span class="events">{{event.triggerTime}}</span></td>
 			<td class="events-row"><span class="events">{{event.powerOn}}</span></td>
-			<td class="events-row"><button class="event-button"
-					ng-click="cancelEventHandler(event)">Cancel</button></td>
+			<td class="events-row"><button class="event_button"
+					ng-click="cancelEventHandler(event)"></button></td>
 		</tr>
 	</table>
 </body>
