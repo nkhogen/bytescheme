@@ -8,9 +8,10 @@ import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.security.PublicKey;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PostConstruct;
 
@@ -43,10 +44,18 @@ public class RootImpl implements Root {
   private static final long serialVersionUID = 1L;
   private static final Logger LOG = LoggerFactory.getLogger(RootImpl.class);
   private static final int CLIENT_RETRY_LIMIT = 3;
+  private static final int MAX_CLIENT_CACHE_SIZE = 50;
   private static final String TARGET_USER = "controlboard";
 
-  private final ConcurrentHashMap<String, RemoteObjectClient> clients = new ConcurrentHashMap<>(
-      Collections.emptyMap());
+  private final Map<String, RemoteObjectClient> clients = Collections.synchronizedMap(new LinkedHashMap<String, RemoteObjectClient>() {
+    private static final long serialVersionUID = 1L;
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<String, RemoteObjectClient> entry) {
+      return size() > MAX_CLIENT_CACHE_SIZE;
+    }
+  });
+
   private final boolean enableMock;
 
   @Autowired
